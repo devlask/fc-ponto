@@ -10,9 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type SelfieCaptureCardProps = {
   onCaptured: (file: File) => void;
+  resetKey?: number;
 };
 
-export function SelfieCaptureCard({ onCaptured }: SelfieCaptureCardProps) {
+export function SelfieCaptureCard({ onCaptured, resetKey = 0 }: SelfieCaptureCardProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -76,8 +77,21 @@ export function SelfieCaptureCard({ onCaptured }: SelfieCaptureCardProps) {
   };
 
   useEffect(() => {
-    return () => stopCamera();
-  }, []);
+    return () => {
+      stopCamera();
+      if (preview) {
+        URL.revokeObjectURL(preview);
+      }
+    };
+  }, [preview]);
+
+  useEffect(() => {
+    if (preview) {
+      URL.revokeObjectURL(preview);
+    }
+    setPreview(null);
+    stopCamera();
+  }, [preview, resetKey]);
 
   return (
     <Card className="ink-chip border-border">

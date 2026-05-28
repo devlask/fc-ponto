@@ -23,6 +23,11 @@ export function DailyTimeline({ entries, title = "Timeline do dia" }: DailyTimel
         <CardTitle className="text-foreground">{title}</CardTitle>
       </CardHeader>
       <CardContent>
+        {entries.length === 0 ? (
+          <div className="rounded-[22px] border border-dashed border-border bg-white/58 p-6 text-sm text-muted-foreground dark:bg-white/6">
+            Nenhum registro encontrado ainda.
+          </div>
+        ) : (
         <div className="space-y-4">
           {entries.map((entry) => (
             <div key={entry.id} className="flex gap-4 rounded-[22px] border border-border bg-white/58 p-4 dark:bg-white/6">
@@ -39,8 +44,8 @@ export function DailyTimeline({ entries, title = "Timeline do dia" }: DailyTimel
                   <span className="inline-flex items-center gap-1.5">
                     <Clock3 className="h-4 w-4 text-primary" />
                     {new Intl.DateTimeFormat("pt-BR", {
-                      hour: "2-digit",
-                      minute: "2-digit",
+                      dateStyle: "short",
+                      timeStyle: "short",
                     }).format(new Date(entry.timestamp))}
                   </span>
                   <span className="inline-flex items-center gap-1.5">
@@ -55,6 +60,7 @@ export function DailyTimeline({ entries, title = "Timeline do dia" }: DailyTimel
             </div>
           ))}
         </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -9,9 +9,10 @@ import type { GeoPoint } from "@/types";
 
 type GpsCaptureCardProps = {
   onResolved: (location: GeoPoint) => void;
+  resetKey?: number;
 };
 
-export function GpsCaptureCard({ onResolved }: GpsCaptureCardProps) {
+export function GpsCaptureCard({ onResolved, resetKey = 0 }: GpsCaptureCardProps) {
   const [location, setLocation] = useState<GeoPoint | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -49,7 +50,7 @@ export function GpsCaptureCard({ onResolved }: GpsCaptureCardProps) {
 
   useEffect(() => {
     captureLocation();
-  }, [captureLocation]);
+  }, [captureLocation, resetKey]);
 
   return (
     <Card className="ink-chip border-border">

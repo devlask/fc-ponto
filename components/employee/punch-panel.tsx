@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Camera, Clock3, Coffee, LogIn, LogOut, MoonStar } from "lucide-react";
 import { toast } from "sonner";
 import { GpsCaptureCard } from "@/components/employee/gps-capture-card";
@@ -9,7 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { employeeStatusCards } from "@/lib/mock-data";
 import type { EntryType, GeoPoint } from "@/types";
 
 const actions: Array<{ type: EntryType; label: string; icon: typeof LogIn }> = [
@@ -20,15 +20,55 @@ const actions: Array<{ type: EntryType; label: string; icon: typeof LogIn }> = [
   { type: "overtime", label: "Hora extra", icon: MoonStar },
 ];
 
-export function PunchPanel() {
+type PunchPanelProps = {
+  summaryCards: Array<{ label: string; value: string }>;
+};
+
+function getDeviceLabel() {
+  const navigatorWithUAData = navigator as Navigator & { userAgentData?: { platform?: string } };
+  const userAgent = navigator.userAgent;
+  const platform = navigatorWithUAData.userAgentData?.platform || navigator.platform || "Dispositivo";
+
+  if (userAgent.includes("Edg/")) return `${platform} / Edge`;
+  if (userAgent.includes("Chrome/")) return `${platform} / Chrome`;
+  if (userAgent.includes("Firefox/")) return `${platform} / Firefox`;
+  if (userAgent.includes("Safari/") && !userAgent.includes("Chrome/")) return `${platform} / Safari`;
+
+  return `${platform} / Navegador`;
+}
+
+function getDeviceId() {
+  const storageKey = "fc-visual-device-id";
+  const existing = window.localStorage.getItem(storageKey);
+
+  if (existing) {
+    return existing;
+  }
+
+  const nextId = crypto.randomUUID();
+  window.localStorage.setItem(storageKey, nextId);
+  return nextId;
+}
+
+export function PunchPanel({ summaryCards }: PunchPanelProps) {
+  const router = useRouter();
   const [location, setLocation] = useState<GeoPoint | null>(null);
   const [selfie, setSelfie] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState<EntryType | null>(null);
+  const [deviceId, setDeviceId] = useState<string | null>(null);
+  const [deviceLabel, setDeviceLabel] = useState<string | null>(null);
+  const [locationResetKey, setLocationResetKey] = useState(0);
+  const [selfieResetKey, setSelfieResetKey] = useState(0);
 
-  const canSubmit = Boolean(location && selfie);
+  useEffect(() => {
+    setDeviceId(getDeviceId());
+    setDeviceLabel(getDeviceLabel());
+  }, []);
+
+  const canSubmit = Boolean(location && selfie && deviceId && deviceLabel);
 
   const registerPunch = async (type: EntryType) => {
-    if (!location || !selfie) {
+    if (!location || !selfie || !deviceId || !deviceLabel) {
       toast.error("Selfie e GPS sao obrigatorios antes do registro.");
       return;
     }
@@ -36,24 +76,34 @@ export function PunchPanel() {
     setSubmitting(type);
 
     try {
-      const response = await fetch("/api/demo/punch", {
+      const formData = new FormData();
+      formData.append("type", type);
+      formData.append("latitude", String(location.lat));
+      formData.append("longitude", String(location.lng));
+      formData.append("accuracy", String(location.accuracy));
+      formData.append("deviceId", deviceId);
+      formData.append("deviceLabel", deviceLabel);
+      formData.append("selfie", selfie);
+
+      const response = await fetch("/api/employee/punch", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type,
-          location,
-          selfieName: selfie.name,
-        }),
+        body: formData,
       });
 
       if (!response.ok) {
-        throw new Error("Falha");
+        const errorPayload = (await response.json().catch(() => null)) as { error?: string } | null;
+        throw new Error(errorPayload?.error || "Falha");
       }
 
       const data = await response.json();
       toast.success(`${data.label} registrada com sucesso. Classificacao: ${data.classification}.`);
-    } catch {
-      toast.error("Nao foi possivel registrar o ponto.");
+      setLocation(null);
+      setSelfie(null);
+      setLocationResetKey((value) => value + 1);
+      setSelfieResetKey((value) => value + 1);
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Nao foi possivel registrar o ponto.");
     } finally {
       setSubmitting(null);
     }
@@ -95,8 +145,8 @@ export function PunchPanel() {
         </Card>
 
         <div className="grid gap-4 lg:grid-cols-2">
-          <GpsCaptureCard onResolved={setLocation} />
-          <SelfieCaptureCard onCaptured={setSelfie} />
+          <GpsCaptureCard onResolved={setLocation} resetKey={locationResetKey} />
+          <SelfieCaptureCard onCaptured={setSelfie} resetKey={selfieResetKey} />
         </div>
       </div>
 
@@ -108,7 +158,7 @@ export function PunchPanel() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
-          {employeeStatusCards.map((item, index) => (
+          {summaryCards.map((item, index) => (
             <div
               key={item.label}
               className={
@@ -126,9 +176,9 @@ export function PunchPanel() {
           <div className="rounded-[24px] border border-border bg-white/55 p-4 dark:bg-white/6">
             <div className="mb-3 flex items-center justify-between">
               <p className="text-sm text-muted-foreground">Conformidade do registro</p>
-              <p className="text-sm text-foreground">100%</p>
+              <p className="text-sm text-foreground">{canSubmit ? "100%" : "67%"}</p>
             </div>
-            <Progress value={100} />
+            <Progress value={canSubmit ? 100 : 67} />
             <p className="mt-3 text-xs leading-5 text-muted-foreground">
               Selfie, GPS, IP e dispositivo sao capturados e enviados junto com o evento de ponto.
             </p>
