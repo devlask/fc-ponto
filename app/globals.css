@@ -1,0 +1,197 @@
+@import "tailwindcss";
+:root {
+  --background: #fcfaf6;
+  --foreground: #231f20;
+  --card: rgba(255, 255, 255, 0.86);
+  --card-foreground: #231f20;
+  --muted: rgba(35, 31, 32, 0.05);
+  --muted-foreground: #6b6670;
+  --border: rgba(35, 31, 32, 0.08);
+  --primary: #00c2e8;
+  --primary-foreground: #062830;
+  --secondary: #ff4fa3;
+  --secondary-foreground: #fff7fb;
+  --accent: #ffd447;
+  --accent-foreground: #3b2e00;
+  --success: #00b884;
+  --warning: #f59e0b;
+  --danger: #ef476f;
+  --ring: rgba(0, 194, 232, 0.22);
+  --shadow: 0 22px 64px rgba(120, 95, 80, 0.14);
+  --graphite: #231f20;
+  --paper-pink: rgba(255, 79, 163, 0.12);
+  --paper-cyan: rgba(0, 194, 232, 0.12);
+  --paper-yellow: rgba(255, 212, 71, 0.18);
+}
+
+.dark {
+  --background: #1f1a1d;
+  --foreground: #fff8f5;
+  --card: rgba(44, 37, 41, 0.86);
+  --card-foreground: #fff8f5;
+  --muted: rgba(255, 248, 245, 0.08);
+  --muted-foreground: #c9bdc4;
+  --border: rgba(255, 248, 245, 0.12);
+  --primary: #63d8ef;
+  --primary-foreground: #08252c;
+  --secondary: #ff6ab0;
+  --secondary-foreground: #2b0d1b;
+  --accent: #ffd95c;
+  --accent-foreground: #342700;
+  --success: #3ad4a0;
+  --warning: #ffb020;
+  --danger: #ff7294;
+  --ring: rgba(99, 216, 239, 0.3);
+  --shadow: 0 28px 72px rgba(0, 0, 0, 0.28);
+  --graphite: #fff8f5;
+  --paper-pink: rgba(255, 106, 176, 0.14);
+  --paper-cyan: rgba(99, 216, 239, 0.13);
+  --paper-yellow: rgba(255, 217, 92, 0.16);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
+  --color-ring: var(--ring);
+  --font-sans: var(--font-manrope);
+  --font-heading: var(--font-space-grotesk);
+}
+
+* {
+  border-color: var(--border);
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-manrope), sans-serif;
+  min-height: 100vh;
+  background-image:
+    radial-gradient(circle at 8% 12%, rgba(0, 194, 232, 0.2), transparent 22%),
+    radial-gradient(circle at 88% 10%, rgba(255, 79, 163, 0.18), transparent 20%),
+    radial-gradient(circle at 55% 0%, rgba(255, 212, 71, 0.15), transparent 18%),
+    linear-gradient(180deg, #fffdf8 0%, #fff6f8 45%, #f7fbff 100%);
+}
+
+.dark body,
+body.dark {
+  background-image:
+    radial-gradient(circle at 10% 10%, rgba(99, 216, 239, 0.16), transparent 20%),
+    radial-gradient(circle at 88% 12%, rgba(255, 106, 176, 0.16), transparent 20%),
+    radial-gradient(circle at 54% 2%, rgba(255, 217, 92, 0.12), transparent 18%),
+    linear-gradient(180deg, #241f22 0%, #1f1a1d 50%, #181417 100%);
+}
+
+a,
+button,
+input,
+textarea,
+select {
+  outline-color: var(--ring);
+}
+
+::selection {
+  background: rgba(0, 194, 232, 0.28);
+  color: var(--foreground);
+}
+
+.glass-panel {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 252, 249, 0.84)),
+    linear-gradient(135deg, var(--paper-cyan), transparent 40%, var(--paper-pink));
+  box-shadow: var(--shadow);
+}
+
+.dark .glass-panel,
+body.dark .glass-panel {
+  background:
+    linear-gradient(180deg, rgba(49, 42, 47, 0.9), rgba(38, 31, 35, 0.86)),
+    linear-gradient(135deg, var(--paper-cyan), transparent 40%, var(--paper-pink));
+}
+
+.studio-backdrop {
+  position: relative;
+}
+
+.studio-backdrop::before,
+.studio-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: auto;
+  pointer-events: none;
+  filter: blur(2px);
+}
+
+.studio-backdrop::before {
+  top: 88px;
+  left: -32px;
+  width: 180px;
+  height: 180px;
+  border-radius: 56% 44% 50% 50%;
+  background: linear-gradient(135deg, rgba(0, 194, 232, 0.18), rgba(0, 194, 232, 0.02));
+}
+
+.studio-backdrop::after {
+  right: -24px;
+  bottom: 80px;
+  width: 210px;
+  height: 140px;
+  border-radius: 50% 50% 42% 58%;
+  background: linear-gradient(135deg, rgba(255, 79, 163, 0.16), rgba(255, 212, 71, 0.14));
+}
+
+.ink-chip {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.95), rgba(255, 251, 247, 0.82)),
+    linear-gradient(135deg, rgba(0, 194, 232, 0.12), rgba(255, 79, 163, 0.1));
+  box-shadow: 0 18px 36px rgba(110, 94, 87, 0.1);
+}
+
+.dark .ink-chip,
+body.dark .ink-chip {
+  background:
+    linear-gradient(180deg, rgba(58, 49, 55, 0.94), rgba(43, 35, 39, 0.82)),
+    linear-gradient(135deg, rgba(99, 216, 239, 0.1), rgba(255, 106, 176, 0.08));
+}
+
+.text-balance {
+  text-wrap: balance;
+}
+
+.mask-fade {
+  mask-image: linear-gradient(to bottom, black 82%, transparent 100%);
+}
+
+@keyframes pulse-soft {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.06);
+    opacity: 1;
+  }
+}
+
+.animate-pulse-soft {
+  animation: pulse-soft 2.6s ease-in-out infinite;
+}
