@@ -2,10 +2,10 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "FC Ponto",
-    short_name: "FC Ponto",
-    description: "Controle de ponto PWA com GPS, selfie e dashboard realtime.",
-    start_url: "/employee",
+    name: "FC Comunicação Visual",
+    short_name: "FC Visual",
+    description: "Registro de Ponto da FC Comunicação Visual.",
+    start_url: "/auth/login",
     display: "standalone",
     background_color: "#07111f",
     theme_color: "#07111f",

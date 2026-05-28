@@ -15,12 +15,11 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: {
-    default: "FC Ponto",
-    template: "%s | FC Ponto",
+    default: "FC Comunicação Visual | Registro de Ponto",
+    template: "%s | FC Comunicação Visual",
   },
-  description:
-    "Sistema PWA de controle de ponto da FC Comunicacao Visual com GPS, selfie e dashboard em tempo real.",
-  applicationName: "FC Ponto",
+  description: "Registro de ponto da FC Comunicação Visual.",
+  applicationName: "FC Comunicação Visual",
 };
 
 export default function RootLayout({

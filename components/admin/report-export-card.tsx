@@ -22,14 +22,14 @@ export function ReportExportCard() {
     const worksheet = XLSX.utils.json_to_sheet(rows);
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Registros");
-    XLSX.writeFile(workbook, "fc-ponto-registros.xlsx");
+    XLSX.writeFile(workbook, "fc-comunicacao-visual-registros.xlsx");
     toast.success("Excel exportado.");
   };
 
   const exportPdf = () => {
     const pdf = new jsPDF();
     pdf.setFontSize(16);
-    pdf.text("FC Ponto - Relatorio de Registros", 14, 18);
+    pdf.text("FC Comunicacao Visual - Relatorio de Registros", 14, 18);
     pdf.setFontSize(11);
     rows.slice(0, 8).forEach((row, index) => {
       pdf.text(
@@ -38,7 +38,7 @@ export function ReportExportCard() {
         32 + index * 8,
       );
     });
-    pdf.save("fc-ponto-relatorio.pdf");
+    pdf.save("fc-comunicacao-visual-relatorio.pdf");
     toast.success("PDF exportado.");
   };
 
