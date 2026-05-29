@@ -13,19 +13,19 @@ type ReportExportCardProps = {
   entries: AdminTimeEntryRow[];
 };
 
-function labelForType(type: AdminTimeEntryRow["type"]) {
-  if (type === "entry") return "Entrada";
-  if (type === "pause") return "Pausa";
-  if (type === "return") return "Retorno";
-  if (type === "overtime") return "Hora extra";
-  return "Saída";
+function labelForType(entry: AdminTimeEntryRow) {
+  if (entry.type === "entry") return entry.isOvertime ? "Entrada extra" : "Entrada";
+  if (entry.type === "exit") return entry.isOvertime ? "Saída extra" : "Saída";
+  if (entry.type === "pause") return "Pausa";
+  if (entry.type === "return") return "Retorno";
+  return "Hora extra";
 }
 
 export function ReportExportCard({ entries }: ReportExportCardProps) {
   const rows = entries.map((entry) => ({
     Funcionário: entry.employeeName,
     Perfil: entry.role,
-    Evento: labelForType(entry.type),
+    Evento: labelForType(entry),
     Horário: new Intl.DateTimeFormat("pt-BR", {
       dateStyle: "short",
       timeStyle: "short",
@@ -95,7 +95,7 @@ export function ReportExportCard({ entries }: ReportExportCardProps) {
             >
               <div className="min-w-0">
                 <p className="truncate font-medium text-foreground">{entry.employeeName}</p>
-                <p className="text-sm text-muted-foreground">{labelForType(entry.type)}</p>
+                <p className="text-sm text-muted-foreground">{labelForType(entry)}</p>
               </div>
               <div className="text-sm text-muted-foreground">
                 {new Intl.DateTimeFormat("pt-BR", {

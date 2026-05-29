@@ -56,16 +56,16 @@ const stepMeta: Array<{
 const nextActionLabels: Record<EntryType, string> = {
   entry: "Marcar entrada",
   exit: "Marcar saída",
-  overtime: "Registrar retorno",
-  pause: "Registrar retorno",
-  return: "Registrar saída",
+  overtime: "Marcar saída",
+  pause: "Marcar entrada",
+  return: "Marcar saída",
 };
 
 const currentStateCopy: Record<WorkState, string> = {
   off: "Pronto para iniciar a jornada.",
   working: "Seu próximo registro será a saída.",
   overtime: "Seu próximo registro será a saída da hora extra.",
-  paused: "Seu próximo registro será o retorno.",
+  paused: "Seu próximo registro será a saída.",
 };
 
 function getDeviceLabel() {

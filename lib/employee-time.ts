@@ -15,12 +15,8 @@ export const entryTypeLabels = {
 } as const;
 
 export function inferNextEntryType(lastEntryType: TimeEntry["type"] | null): TimeEntry["type"] {
-  if (lastEntryType === "entry" || lastEntryType === "return" || lastEntryType === "overtime") {
+  if (lastEntryType && lastEntryType !== "exit") {
     return "exit";
-  }
-
-  if (lastEntryType === "pause") {
-    return "return";
   }
 
   return "entry";

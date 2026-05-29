@@ -3,13 +3,25 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { TimeEntry } from "@/types";
 
-const labels = {
-  entry: "Entrada",
-  pause: "Pausa",
-  return: "Retorno",
-  exit: "Saida",
-  overtime: "Hora extra",
-};
+function getEntryLabel(entry: TimeEntry) {
+  if (entry.type === "entry") {
+    return entry.isOvertime ? "Entrada extra" : "Entrada";
+  }
+
+  if (entry.type === "exit") {
+    return entry.isOvertime ? "Saída extra" : "Saída";
+  }
+
+  if (entry.type === "overtime") {
+    return "Hora extra";
+  }
+
+  if (entry.type === "pause") {
+    return "Pausa";
+  }
+
+  return "Retorno";
+}
 
 type DailyTimelineProps = {
   entries: TimeEntry[];
@@ -42,7 +54,7 @@ export function DailyTimeline({
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-medium text-foreground">{labels[entry.type]}</p>
+                  <p className="font-medium text-foreground">{getEntryLabel(entry)}</p>
                   {entry.isOvertime ? <Badge variant="warning">hora extra</Badge> : <Badge variant="info">normal</Badge>}
                 </div>
                 {showEmployeeName ? (

@@ -3,6 +3,8 @@ import "server-only";
 import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { calculateWorkedMinutes } from "@/lib/time";
+import { formatMinutes } from "@/lib/utils";
 import type { ActiveWorker, ApprovalStatus, EntryType, TimeEntry, UserRole } from "@/types";
 
 export type AdminSession = {
@@ -43,6 +45,15 @@ export type AdminAuditLog = {
 
 export type AdminTimeEntryRow = TimeEntry & {
   role: UserRole;
+};
+
+export type AdminEmployeeDetail = {
+  entries: AdminTimeEntryRow[];
+  id: string;
+  email: string;
+  fullName: string;
+  role: UserRole;
+  summaryCards: Array<{ label: string; value: string }>;
 };
 
 type SupabaseRow = Record<string, unknown>;
@@ -104,6 +115,89 @@ function mapLocationLabel(status: string | null | undefined) {
   if (status === "outside") return "Fora do geofence";
   if (status === "unknown") return "Geofence indisponível";
   return "Dentro do geofence";
+}
+
+function timeToMinutes(time: string) {
+  const [hours, minutes] = time.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function getDateKeyInTimeZone(date: Date, timeZone: string) {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(date);
+}
+
+function getMinutesInTimeZone(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? "0");
+  return hour * 60 + minute;
+}
+
+function getDayIndexInTimeZone(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "short",
+  }).format(date);
+  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  return weekdays.indexOf(parts);
+}
+
+function calculateLateMetrics(
+  entries: AdminTimeEntryRow[],
+  dailyRules: Record<string, { enabled?: boolean; start?: string }>,
+  toleranceMinutes: number,
+  timeZone: string,
+) {
+  const firstEntriesByDay = new Map<string, AdminTimeEntryRow>();
+
+  for (const entry of entries) {
+    if (entry.type !== "entry") {
+      continue;
+    }
+
+    const date = new Date(entry.timestamp);
+    const dayKey = getDateKeyInTimeZone(date, timeZone);
+    const current = firstEntriesByDay.get(dayKey);
+
+    if (!current || new Date(current.timestamp).getTime() > date.getTime()) {
+      firstEntriesByDay.set(dayKey, entry);
+    }
+  }
+
+  let lateDays = 0;
+  let lateMinutes = 0;
+
+  for (const entry of firstEntriesByDay.values()) {
+    const date = new Date(entry.timestamp);
+    const dayIndex = getDayIndexInTimeZone(date, timeZone);
+    const rule = dailyRules[String(dayIndex)];
+
+    if (!rule?.enabled || !rule.start) {
+      continue;
+    }
+
+    const startMinutes = timeToMinutes(rule.start) + toleranceMinutes;
+    const entryMinutes = getMinutesInTimeZone(date, timeZone);
+    const delay = entryMinutes - startMinutes;
+
+    if (delay > 0) {
+      lateDays += 1;
+      lateMinutes += delay;
+    }
+  }
+
+  return { lateDays, lateMinutes };
 }
 
 function mapTimeEntry(row: SupabaseRow, userName: string, userRole: UserRole, userId: string): AdminTimeEntryRow {
@@ -327,5 +421,66 @@ export async function getAdminApprovalsData() {
         reason: String(row.reason),
       } satisfies AdminEditRequest;
     }),
+  };
+}
+
+export async function getAdminEmployeeDetail(userId: string): Promise<AdminEmployeeDetail | null> {
+  await requireAdminSession();
+  const supabase = await createSupabaseServerClient();
+
+  if (!supabase) {
+    return null;
+  }
+
+  const [{ data: userProfile }, { data: schedule }, { data: entriesResult }] = await Promise.all([
+    supabase.from("users").select("id, full_name, email, role").eq("id", userId).maybeSingle(),
+    supabase
+      .from("work_schedule_settings")
+      .select("timezone, tolerance_minutes, daily_rules")
+      .eq("is_active", true)
+      .order("updated_at", { ascending: false })
+      .maybeSingle(),
+    supabase
+      .from("time_entries")
+      .select(
+        "id, user_id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime",
+      )
+      .eq("user_id", userId)
+      .order("recorded_at", { ascending: false })
+      .limit(180),
+  ]);
+
+  if (!userProfile) {
+    return null;
+  }
+
+  const entries = [...(entriesResult ?? [])]
+    .reverse()
+    .map((row) => mapTimeEntry(row, String(userProfile.full_name), String(userProfile.role) as UserRole, userId));
+
+  const last30Days = entries.filter(
+    (entry) => new Date(entry.timestamp).getTime() >= Date.now() - 30 * 24 * 60 * 60 * 1000,
+  );
+  const summary = calculateWorkedMinutes(last30Days);
+  const timeZone = typeof schedule?.timezone === "string" ? schedule.timezone : "America/Sao_Paulo";
+  const toleranceMinutes = typeof schedule?.tolerance_minutes === "number" ? schedule.tolerance_minutes : 10;
+  const dailyRules =
+    schedule?.daily_rules && typeof schedule.daily_rules === "object"
+      ? (schedule.daily_rules as Record<string, { enabled?: boolean; start?: string }>)
+      : {};
+  const lateMetrics = calculateLateMetrics(last30Days, dailyRules, toleranceMinutes, timeZone);
+
+  return {
+    email: String(userProfile.email),
+    entries,
+    fullName: String(userProfile.full_name),
+    id: String(userProfile.id),
+    role: String(userProfile.role) as UserRole,
+    summaryCards: [
+      { label: "Horas trabalhadas", value: formatMinutes(summary.totalMinutes) },
+      { label: "Horas extras", value: formatMinutes(summary.overtimeMinutes) },
+      { label: "Atrasos", value: `${lateMetrics.lateDays} dia(s) • ${lateMetrics.lateMinutes} min` },
+      { label: "Registros", value: String(entries.length) },
+    ],
   };
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Pencil, Save } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
@@ -97,7 +98,10 @@ export function TeamTable({ members: initialMembers }: TeamTableProps) {
                 <p className="text-sm text-muted-foreground">
                   {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(member.createdAt))}
                 </p>
-                <div className="flex items-start justify-end">
+                <div className="flex flex-wrap items-start justify-end gap-2">
+                  <Button type="button" size="sm" variant="ghost" className="rounded-xl" asChild>
+                    <Link href={`/admin/team/${member.id}`}>Ver ficha</Link>
+                  </Button>
                   {isEditing ? (
                     <Button
                       type="button"
