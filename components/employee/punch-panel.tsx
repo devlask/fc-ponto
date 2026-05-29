@@ -5,9 +5,12 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   Camera,
+  Check,
   ChevronLeft,
   CheckCircle2,
-  Clock3,
+  CircleAlert,
+  CircleX,
+  X,
   Fingerprint,
   LoaderCircle,
   MapPin,
@@ -19,7 +22,7 @@ import { GpsCaptureCard } from "@/components/employee/gps-capture-card";
 import { SelfieCaptureCard } from "@/components/employee/selfie-capture-card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import type { EntryType, GeoPoint, WorkState } from "@/types";
@@ -31,7 +34,8 @@ type PunchPanelProps = {
   summaryCards: Array<{ label: string; value: string }>;
 };
 
-type PunchStep = "home" | "location" | "selfie" | "confirm";
+type PunchStep = "location" | "selfie" | "confirm";
+type ModalStatus = "idle" | "success" | "error";
 
 type Receipt = {
   classification: string;
@@ -91,7 +95,6 @@ function getDeviceId() {
 }
 
 function getStepProgress(step: PunchStep) {
-  if (step === "home") return 0;
   if (step === "location") return 34;
   if (step === "selfie") return 68;
   return 100;
@@ -100,14 +103,16 @@ function getStepProgress(step: PunchStep) {
 function getStepIndex(step: PunchStep) {
   if (step === "location") return 0;
   if (step === "selfie") return 1;
-  if (step === "confirm") return 2;
-  return -1;
+  return 2;
 }
 
 export function PunchPanel({ currentState, employeeName, nextEntryType, summaryCards }: PunchPanelProps) {
   const router = useRouter();
   const [isRefreshing, startRefresh] = useTransition();
-  const [step, setStep] = useState<PunchStep>("home");
+  const [step, setStep] = useState<PunchStep>("location");
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalStatus, setModalStatus] = useState<ModalStatus>("idle");
+  const [modalMessage, setModalMessage] = useState<string | null>(null);
   const [location, setLocation] = useState<GeoPoint | null>(null);
   const [selfie, setSelfie] = useState<File | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -127,6 +132,19 @@ export function PunchPanel({ currentState, employeeName, nextEntryType, summaryC
     const timer = window.setInterval(() => setNow(new Date()), 1000);
     return () => window.clearInterval(timer);
   }, []);
+
+  useEffect(() => {
+    if (!modalOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [modalOpen]);
 
   const nextActionLabel = nextActionLabels[nextEntryType];
   const canGoToSelfie = Boolean(location);
@@ -167,7 +185,20 @@ export function PunchPanel({ currentState, employeeName, nextEntryType, summaryC
     if (clearReceipt) {
       setReceipt(null);
     }
-    setStep("home");
+    setStep("location");
+    setModalStatus("idle");
+    setModalMessage(null);
+  };
+
+  const openModal = () => {
+    resetFlow(false);
+    setReceipt(null);
+    setModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setModalOpen(false);
+    resetFlow(false);
   };
 
   const submitPunch = async () => {
@@ -199,331 +230,334 @@ export function PunchPanel({ currentState, employeeName, nextEntryType, summaryC
 
       const data = (await response.json()) as Receipt;
       setReceipt(data);
+      setModalStatus("success");
+      setModalMessage("Ponto registrado e sincronizado com sucesso.");
       toast.success("Ponto registrado com sucesso.");
       startRefresh(() => {
         router.refresh();
       });
-      resetFlow(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Não foi possível registrar o ponto.");
+      const message = error instanceof Error ? error.message : "Não foi possível registrar o ponto.";
+      setModalStatus("error");
+      setModalMessage(message);
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
   };
 
-  const showReceipt = receipt && step === "home";
-
   return (
-    <div className="grid gap-5 xl:grid-cols-[1.12fr_0.88fr]">
-      <div className="space-y-5">
-        <AnimatePresence mode="wait">
-          {step === "home" ? (
-            <motion.div
-              key="home"
-              initial={{ opacity: 0, y: 18 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -12 }}
-              transition={{ duration: 0.24 }}
-            >
-              <Card className="overflow-hidden border-none bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(244,248,255,0.94))] shadow-[0_26px_70px_rgba(30,86,184,0.14)]">
-                <CardContent className="space-y-8 p-6 sm:p-7">
-                  <div className="flex items-start justify-between gap-4">
-                    <CompanyLogo />
-                    <Badge variant="info" className="rounded-full px-3 py-1">
-                      Registro guiado
-                    </Badge>
-                  </div>
+    <div className="space-y-5">
+      <Card className="overflow-hidden border-none bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(244,248,255,0.94))] shadow-[0_26px_70px_rgba(30,86,184,0.14)]">
+        <CardContent className="space-y-8 p-6 sm:p-7">
+          <div className="flex items-start justify-between gap-4">
+            <CompanyLogo />
+            <Badge variant="info" className="rounded-full px-3 py-1">
+              Registro guiado
+            </Badge>
+          </div>
 
-                  <div className="space-y-4">
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">Olá, {employeeName}</p>
-                      <h2 className="mt-2 font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                        {nextActionLabel}
-                      </h2>
-                      <p className="mt-2 text-sm leading-6 text-muted-foreground">{currentStateCopy[currentState]}</p>
-                    </div>
-
-                    <div className="rounded-[30px] bg-[linear-gradient(135deg,#0f6df2_0%,#3388ff_45%,#7ab3ff_100%)] px-6 py-7 text-white shadow-[0_24px_60px_rgba(15,109,242,0.28)]">
-                      <p className="text-sm uppercase tracking-[0.22em] text-white/72">Hora local</p>
-                      <p className="mt-4 font-heading text-5xl font-semibold tracking-tight sm:text-6xl">
-                        {new Intl.DateTimeFormat("pt-BR", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          second: "2-digit",
-                        }).format(now)}
-                      </p>
-                      <p className="mt-3 text-sm text-white/80">
-                        {new Intl.DateTimeFormat("pt-BR", {
-                          dateStyle: "full",
-                        }).format(now)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    {summaryCards.map((item, index) => (
-                      <div
-                        key={item.label}
-                        className={cn(
-                          "rounded-[24px] border p-4",
-                          index === 0 && "border-[#d9e7ff] bg-[#eef5ff]",
-                          index === 1 && "border-[#ffd7ea] bg-[#fff1f8]",
-                          index === 2 && "border-[#ffeab3] bg-[#fff7dd]",
-                        )}
-                      >
-                        <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{item.label}</p>
-                        <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{item.value}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex flex-col gap-3 sm:flex-row">
-                    <Button
-                      type="button"
-                      size="lg"
-                      className="h-16 flex-1 rounded-[22px] text-base"
-                      onClick={() => {
-                        setReceipt(null);
-                        setStep("location");
-                      }}
-                    >
-                      Marcar ponto
-                    </Button>
-                    <div className="rounded-[22px] border border-border bg-card/70 px-4 py-4 text-sm text-muted-foreground sm:max-w-[220px]">
-                      GPS e selfie serão validados em etapas separadas antes da confirmação.
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          ) : (
-            <motion.div
-              key={step}
-              initial={{ opacity: 0, x: 22 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -18 }}
-              transition={{ duration: 0.22 }}
-              className="space-y-4"
-            >
-              <Card className="overflow-hidden border-none bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(247,250,255,0.94))] shadow-[0_26px_70px_rgba(30,86,184,0.10)]">
-                <CardContent className="space-y-6 p-6 sm:p-7">
-                  <div className="flex items-center justify-between gap-3">
-                    <Button type="button" variant="ghost" className="rounded-[18px]" onClick={() => setStep("home")}>
-                      <ChevronLeft className="h-4 w-4" />
-                      Voltar
-                    </Button>
-                    <Badge variant="info" className="rounded-full px-3 py-1">
-                      Etapa {Math.max(currentStepIndex + 1, 1)} de 3
-                    </Badge>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      {stepMeta.map((item, index) => {
-                        const active = currentStepIndex >= index;
-
-                        return (
-                          <div key={item.id} className="flex min-w-0 flex-1 items-center gap-3">
-                            <div
-                              className={cn(
-                                "flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition-colors",
-                                active
-                                  ? "border-transparent bg-[#0f6df2] text-white"
-                                  : "border-border bg-card/70 text-muted-foreground",
-                              )}
-                            >
-                              <item.icon className="h-4 w-4" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-medium text-foreground">{item.label}</p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                    <Progress value={progress} />
-                  </div>
-
-                  {step === "location" && (
-                    <div className="space-y-5">
-                      <div>
-                        <h3 className="font-heading text-2xl font-semibold text-foreground">Confirme sua localização</h3>
-                        <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                          Primeiro capturamos sua posição atual para validar o registro de ponto.
-                        </p>
-                      </div>
-
-                      <GpsCaptureCard onResolved={setLocation} resetKey={locationResetKey} />
-
-                      <div className="flex justify-end">
-                        <Button
-                          type="button"
-                          size="lg"
-                          className="h-14 rounded-[20px] px-8"
-                          onClick={() => setStep("selfie")}
-                          disabled={!canGoToSelfie}
-                        >
-                          Continuar
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {step === "selfie" && (
-                    <div className="space-y-5">
-                      <div>
-                        <h3 className="font-heading text-2xl font-semibold text-foreground">Capture sua selfie</h3>
-                        <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                          A foto é registrada apenas para validação do ponto e auditoria do evento.
-                        </p>
-                      </div>
-
-                      <SelfieCaptureCard onCaptured={setSelfie} resetKey={selfieResetKey} />
-
-                      <div className="flex items-center justify-between gap-3">
-                        <Button type="button" variant="outline" className="rounded-[20px]" onClick={() => setStep("location")}>
-                          Voltar para GPS
-                        </Button>
-                        <Button
-                          type="button"
-                          size="lg"
-                          className="h-14 rounded-[20px] px-8"
-                          onClick={() => setStep("confirm")}
-                          disabled={!selfie}
-                        >
-                          Revisar marcação
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {step === "confirm" && (
-                    <div className="space-y-5">
-                      <div>
-                        <h3 className="font-heading text-2xl font-semibold text-foreground">Confirmar ponto</h3>
-                        <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                          Revise os dados abaixo antes de enviar o registro definitivo.
-                        </p>
-                      </div>
-
-                      <div className="grid gap-3">
-                        {confirmationRows.map((row) => (
-                          <div key={row.label} className="rounded-[24px] border border-border bg-white/72 p-4 dark:bg-white/6">
-                            <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{row.label}</p>
-                            <p className="mt-2 text-base font-medium text-foreground">{row.value}</p>
-                          </div>
-                        ))}
-                      </div>
-
-                      <div className="rounded-[24px] border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm text-emerald-800 dark:text-emerald-200">
-                        <div className="flex items-center gap-2">
-                          <ShieldCheck className="h-4 w-4" />
-                          GPS, selfie, IP e dispositivo serão anexados ao evento.
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between gap-3">
-                        <Button type="button" variant="outline" className="rounded-[20px]" onClick={() => setStep("selfie")}>
-                          Voltar para selfie
-                        </Button>
-                        <Button
-                          type="button"
-                          size="lg"
-                          className="h-14 rounded-[20px] px-8"
-                          onClick={submitPunch}
-                          disabled={!canConfirm || submitting}
-                        >
-                          {submitting ? (
-                            <>
-                              <LoaderCircle className="h-4 w-4 animate-spin" />
-                              Confirmando...
-                            </>
-                          ) : (
-                            "Confirmar ponto"
-                          )}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      <div className="space-y-5">
-        {showReceipt && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-[28px] border border-emerald-400/20 bg-[linear-gradient(180deg,rgba(240,255,248,0.96),rgba(234,255,245,0.92))] p-5 shadow-[0_20px_52px_rgba(16,185,129,0.12)]"
-          >
-            <div className="flex items-start gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/12 text-emerald-700">
-                <CheckCircle2 className="h-6 w-6" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-emerald-800">Registro sincronizado</p>
-                <p className="mt-1 font-heading text-2xl font-semibold text-foreground">{receipt.label}</p>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  {new Intl.DateTimeFormat("pt-BR", {
-                    dateStyle: "medium",
-                    timeStyle: "medium",
-                  }).format(new Date(receipt.timestamp))}
-                </p>
-                <Badge variant="success" className="mt-3">
-                  {receipt.classification}
-                </Badge>
-              </div>
-            </div>
-          </motion.div>
-        )}
-
-        <Card className="ink-chip border-border">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-foreground">
-              <Clock3 className="h-5 w-5 text-primary" />
-              Visão rápida
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="rounded-[24px] border border-border bg-white/70 p-4 dark:bg-white/6">
-              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Próxima ação</p>
-              <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{nextActionLabel}</p>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Olá, {employeeName}</p>
+              <h2 className="mt-2 font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
+                {nextActionLabel}
+              </h2>
               <p className="mt-2 text-sm leading-6 text-muted-foreground">{currentStateCopy[currentState]}</p>
             </div>
 
-            <div className="grid gap-3">
-              {summaryCards.map((item, index) => (
-                <div
-                  key={item.label}
-                  className={cn(
-                    "rounded-[24px] border p-4",
-                    index === 0 && "border-[#d9e7ff] bg-[#eef5ff]",
-                    index === 1 && "border-[#ffd7ea] bg-[#fff1f8]",
-                    index === 2 && "border-[#ffeab3] bg-[#fff7dd]",
-                  )}
-                >
-                  <p className="text-sm text-muted-foreground">{item.label}</p>
-                  <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{item.value}</p>
-                </div>
-              ))}
-            </div>
-
-            <div className="rounded-[24px] border border-border bg-white/70 p-4 dark:bg-white/6">
-              <div className="mb-3 flex items-center justify-between">
-                <p className="text-sm text-muted-foreground">Sincronização</p>
-                <p className="text-sm text-foreground">{isRefreshing ? "Atualizando..." : "Online"}</p>
-              </div>
-              <Progress value={isRefreshing ? 76 : 100} />
-              <p className="mt-3 text-xs leading-5 text-muted-foreground">
-                O histórico abaixo será atualizado automaticamente após a confirmação do ponto.
+            <div className="rounded-[30px] bg-[linear-gradient(135deg,#0f6df2_0%,#3388ff_45%,#7ab3ff_100%)] px-6 py-7 text-white shadow-[0_24px_60px_rgba(15,109,242,0.28)]">
+              <p className="text-sm uppercase tracking-[0.22em] text-white/72">Hora local</p>
+              <p className="mt-4 font-heading text-5xl font-semibold tracking-tight sm:text-6xl">
+                {new Intl.DateTimeFormat("pt-BR", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  second: "2-digit",
+                }).format(now)}
+              </p>
+              <p className="mt-3 text-sm text-white/80">
+                {new Intl.DateTimeFormat("pt-BR", {
+                  dateStyle: "full",
+                }).format(now)}
               </p>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-3">
+            {summaryCards.map((item, index) => (
+              <div
+                key={item.label}
+                className={cn(
+                  "rounded-[24px] border p-4",
+                  index === 0 && "border-[#d9e7ff] bg-[#eef5ff]",
+                  index === 1 && "border-[#ffd7ea] bg-[#fff1f8]",
+                  index === 2 && "border-[#ffeab3] bg-[#fff7dd]",
+                )}
+              >
+                <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{item.label}</p>
+                <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{item.value}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <Button type="button" size="lg" className="h-16 flex-1 rounded-[22px] text-base" onClick={openModal}>
+              Marcar ponto
+            </Button>
+            <div className="rounded-[22px] border border-border bg-card/70 px-4 py-4 text-sm text-muted-foreground sm:max-w-[220px]">
+              GPS e selfie serão validados em etapas separadas dentro do modal de marcação.
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <AnimatePresence>
+        {modalOpen && (
+          <motion.div
+            className="fixed inset-0 z-[80] bg-slate-950/38 backdrop-blur-[3px]"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <div className="flex min-h-screen items-end justify-center p-3 sm:items-center sm:p-6">
+              <motion.div
+                initial={{ opacity: 0, y: 24, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 20, scale: 0.98 }}
+                transition={{ duration: 0.22 }}
+                className={cn(
+                  "max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-[32px] border bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,255,0.98))] shadow-[0_28px_90px_rgba(10,26,61,0.24)]",
+                  modalStatus === "idle" && "border-white/70",
+                  modalStatus === "success" && "border-emerald-400/60 shadow-[0_28px_90px_rgba(16,185,129,0.22)]",
+                  modalStatus === "error" && "border-rose-400/60 shadow-[0_28px_90px_rgba(244,63,94,0.20)]",
+                )}
+              >
+                <div className="max-h-[92vh] overflow-y-auto">
+                  <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border/70 bg-white/88 px-5 py-4 backdrop-blur-xl">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-muted-foreground">FC Comunicação Visual</p>
+                      <p className="font-heading text-xl font-semibold text-foreground">Marcação de ponto</p>
+                    </div>
+                    <Button type="button" variant="ghost" className="rounded-full" onClick={closeModal}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  {modalStatus === "idle" ? (
+                    <div className="space-y-6 p-5 sm:p-7">
+                      <div className="flex items-center justify-between gap-3">
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="rounded-[18px]"
+                          onClick={() => (step === "location" ? closeModal() : setStep(step === "selfie" ? "location" : "selfie"))}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                          {step === "location" ? "Fechar" : "Voltar"}
+                        </Button>
+                        <Badge variant="info" className="rounded-full px-3 py-1">
+                          Etapa {currentStepIndex + 1} de 3
+                        </Badge>
+                      </div>
+
+                      <div className="space-y-3">
+                        <div className="grid grid-cols-3 gap-2">
+                          {stepMeta.map((item, index) => {
+                            const active = currentStepIndex >= index;
+
+                            return (
+                              <div key={item.id} className="min-w-0 rounded-[20px] border border-border/70 bg-white/70 p-3 text-center dark:bg-white/6">
+                                <div
+                                  className={cn(
+                                    "mx-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition-colors",
+                                    active
+                                      ? "border-transparent bg-[#0f6df2] text-white"
+                                      : "border-border bg-card/70 text-muted-foreground",
+                                  )}
+                                >
+                                  <item.icon className="h-4 w-4" />
+                                </div>
+                                <p className="mt-2 truncate text-sm font-medium text-foreground">{item.label}</p>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <Progress value={progress} />
+                      </div>
+
+                      {step === "location" && (
+                        <div className="space-y-5">
+                          <div>
+                            <h3 className="font-heading text-2xl font-semibold text-foreground">Confirme sua localização</h3>
+                            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                              Primeiro capturamos sua posição atual para validar o registro de ponto.
+                            </p>
+                          </div>
+
+                          <GpsCaptureCard onResolved={setLocation} resetKey={locationResetKey} />
+
+                          <div className="flex justify-end">
+                            <Button
+                              type="button"
+                              size="lg"
+                              className="h-14 rounded-[20px] px-8"
+                              onClick={() => setStep("selfie")}
+                              disabled={!canGoToSelfie}
+                            >
+                              Continuar
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {step === "selfie" && (
+                        <div className="space-y-5">
+                          <div>
+                            <h3 className="font-heading text-2xl font-semibold text-foreground">Capture sua selfie</h3>
+                            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                              A foto é registrada apenas para validação do ponto e auditoria do evento.
+                            </p>
+                          </div>
+
+                          <SelfieCaptureCard onCaptured={setSelfie} resetKey={selfieResetKey} />
+
+                          <div className="flex justify-end">
+                            <Button
+                              type="button"
+                              size="lg"
+                              className="h-14 rounded-[20px] px-8"
+                              onClick={() => setStep("confirm")}
+                              disabled={!selfie}
+                            >
+                              Revisar marcação
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+
+                      {step === "confirm" && (
+                        <div className="space-y-5">
+                          <div>
+                            <h3 className="font-heading text-2xl font-semibold text-foreground">Confirmar ponto</h3>
+                            <p className="mt-1 text-sm leading-6 text-muted-foreground">
+                              Revise os dados abaixo antes de enviar o registro definitivo.
+                            </p>
+                          </div>
+
+                          <div className="grid gap-3">
+                            {confirmationRows.map((row) => (
+                              <div key={row.label} className="rounded-[24px] border border-border bg-white/72 p-4 dark:bg-white/6">
+                                <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">{row.label}</p>
+                                <p className="mt-2 text-base font-medium text-foreground">{row.value}</p>
+                              </div>
+                            ))}
+                          </div>
+
+                          <div className="rounded-[24px] border border-emerald-400/20 bg-emerald-400/10 p-4 text-sm text-emerald-800 dark:text-emerald-200">
+                            <div className="flex items-center gap-2">
+                              <ShieldCheck className="h-4 w-4" />
+                              GPS, selfie, IP e dispositivo serão anexados ao evento.
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end">
+                            <Button
+                              type="button"
+                              size="lg"
+                              className="h-14 rounded-[20px] px-8"
+                              onClick={submitPunch}
+                              disabled={!canConfirm || submitting}
+                            >
+                              {submitting ? (
+                                <>
+                                  <LoaderCircle className="h-4 w-4 animate-spin" />
+                                  Confirmando...
+                                </>
+                              ) : (
+                                "Confirmar ponto"
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-6 p-6 sm:p-8">
+                      <div
+                        className={cn(
+                          "rounded-[28px] border p-5",
+                          modalStatus === "success" && "border-emerald-300 bg-emerald-50/80",
+                          modalStatus === "error" && "border-rose-300 bg-rose-50/90",
+                        )}
+                      >
+                        <div className="flex items-start gap-4">
+                          <div
+                            className={cn(
+                              "flex h-14 w-14 items-center justify-center rounded-full",
+                              modalStatus === "success" && "bg-emerald-500/12 text-emerald-700",
+                              modalStatus === "error" && "bg-rose-500/12 text-rose-700",
+                            )}
+                          >
+                            {modalStatus === "success" ? <Check className="h-7 w-7" /> : <CircleX className="h-7 w-7" />}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p
+                              className={cn(
+                                "text-sm font-medium",
+                                modalStatus === "success" && "text-emerald-800",
+                                modalStatus === "error" && "text-rose-800",
+                              )}
+                            >
+                              {modalStatus === "success" ? "Marcação concluída" : "Falha na marcação"}
+                            </p>
+                            <p className="mt-2 font-heading text-3xl font-semibold text-foreground">
+                              {modalStatus === "success" ? receipt?.label : "Não foi possível registrar"}
+                            </p>
+                            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+                              {modalMessage}
+                            </p>
+                            {modalStatus === "success" && receipt ? (
+                              <div className="mt-4 space-y-2">
+                                <Badge variant="success">{receipt.classification}</Badge>
+                                <p className="text-sm text-muted-foreground">
+                                  {new Intl.DateTimeFormat("pt-BR", {
+                                    dateStyle: "medium",
+                                    timeStyle: "medium",
+                                  }).format(new Date(receipt.timestamp))}
+                                </p>
+                                <p className="inline-flex items-center gap-2 text-sm text-emerald-800">
+                                  <CheckCircle2 className="h-4 w-4" />
+                                  {isRefreshing ? "Atualizando histórico..." : "Histórico será atualizado em seguida."}
+                                </p>
+                              </div>
+                            ) : (
+                              <p className="mt-4 inline-flex items-center gap-2 text-sm text-rose-800">
+                                <CircleAlert className="h-4 w-4" />
+                                Revise GPS, selfie e conexão antes de tentar novamente.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end gap-3">
+                        {modalStatus === "error" && (
+                          <Button type="button" variant="outline" className="rounded-[20px]" onClick={() => setModalStatus("idle")}>
+                            Tentar novamente
+                          </Button>
+                        )}
+                        <Button type="button" className="rounded-[20px]" onClick={closeModal}>
+                          {modalStatus === "success" ? "Concluir" : "Fechar"}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

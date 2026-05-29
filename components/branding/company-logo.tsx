@@ -17,10 +17,12 @@ export function CompanyLogo({ compact = false, href, className }: CompanyLogoPro
       </div>
       {!compact && (
         <div className="min-w-0">
-          <p className="font-heading text-[0.78rem] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
+          <p className="whitespace-nowrap font-heading text-[0.72rem] font-semibold uppercase tracking-[0.12em] text-muted-foreground sm:text-[0.78rem]">
             FC Comunicação Visual
           </p>
-          <p className="font-heading text-lg font-semibold leading-tight text-foreground">Registro de Ponto</p>
+          <p className="whitespace-nowrap font-heading text-lg font-semibold leading-tight text-foreground">
+            Registro de Ponto
+          </p>
         </div>
       )}
     </div>

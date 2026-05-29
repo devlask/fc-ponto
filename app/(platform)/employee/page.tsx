@@ -25,7 +25,7 @@ export default async function EmployeePage() {
         nextEntryType={snapshot.nextEntryType}
         summaryCards={snapshot.summaryCards}
       />
-      <DailyTimeline entries={snapshot.todayEntries} />
+      <DailyTimeline entries={snapshot.recentEntries.slice(-8)} title="Últimos registros" />
     </div>
   );
 }

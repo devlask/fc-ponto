@@ -22,14 +22,14 @@ export function AppShell({ children }: AppShellProps) {
   const profileHref = "/profile";
 
   return (
-    <div className="mx-auto min-h-screen max-w-7xl px-4 pb-28 pt-4 sm:px-6 lg:px-8">
+    <div className="mx-auto min-h-screen max-w-7xl px-4 pb-40 pt-4 sm:px-6 lg:px-8">
       <motion.header
         initial={{ opacity: 0, y: -14 }}
         animate={{ opacity: 1, y: 0 }}
-        className="glass-panel sticky top-4 z-40 mb-6 rounded-[28px] border border-border px-4 py-4 backdrop-blur-xl"
+        className="mb-5 px-1 py-1"
       >
-        <div className="flex items-center justify-between gap-3">
-          <CompanyLogo href={isAdmin ? "/admin" : "/employee"} />
+        <div className="flex items-center justify-between gap-3 rounded-[24px] bg-white/74 px-4 py-4 shadow-[0_20px_46px_rgba(31,41,55,0.08)] backdrop-blur-xl dark:bg-card/88">
+          <CompanyLogo href={isAdmin ? "/admin" : "/employee"} className="min-w-0" />
 
           <div className="flex items-center gap-2">
             <InstallPrompt />
@@ -48,7 +48,10 @@ export function AppShell({ children }: AppShellProps) {
         {children}
       </motion.div>
 
-      <nav className="fixed inset-x-0 bottom-4 z-50 mx-auto max-w-md px-4">
+      <nav
+        className="fixed inset-x-0 z-50 mx-auto max-w-md px-4"
+        style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
+      >
         <div className="glass-panel flex items-center justify-between rounded-[28px] border border-border px-3 py-3 backdrop-blur-xl">
           {navItems.map((item) => {
             const active = pathname === item.href;

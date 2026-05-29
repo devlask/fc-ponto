@@ -1,5 +1,6 @@
 import "server-only";
 
+import { unstable_noStore as noStore } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { calculateWorkedMinutes } from "@/lib/time";
 import { formatMinutes } from "@/lib/utils";
@@ -104,6 +105,8 @@ export type EmployeeTimeSnapshot = {
 };
 
 export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise<EmployeeTimeSnapshot | null> {
+  noStore();
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
