@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { resolveUserRole } from "@/lib/admin-data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function PATCH(
@@ -19,8 +20,7 @@ export async function PATCH(
     return NextResponse.json({ error: "Sessão expirada." }, { status: 401 });
   }
 
-  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle();
-  const role = String(profile?.role ?? "employee");
+  const role = await resolveUserRole(user.id, user.user_metadata?.role, supabase);
 
   if (role !== "manager" && role !== "admin") {
     return NextResponse.json({ error: "Acesso negado." }, { status: 403 });

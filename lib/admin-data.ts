@@ -1,6 +1,7 @@
 import "server-only";
 
 import { redirect } from "next/navigation";
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ActiveWorker, ApprovalStatus, EntryType, TimeEntry, UserRole } from "@/types";
 
@@ -45,6 +46,52 @@ export type AdminTimeEntryRow = TimeEntry & {
 };
 
 type SupabaseRow = Record<string, unknown>;
+const validRoles = new Set<UserRole>(["employee", "manager", "admin"]);
+
+function normalizeRole(value: unknown): UserRole | null {
+  return typeof value === "string" && validRoles.has(value as UserRole) ? (value as UserRole) : null;
+}
+
+export async function resolveUserRole(
+  userId: string,
+  fallbackRole?: unknown,
+  providedSupabase?: Awaited<ReturnType<typeof createSupabaseServerClient>>,
+): Promise<UserRole> {
+  const supabase = providedSupabase ?? (await createSupabaseServerClient());
+
+  if (supabase) {
+    const { data: profile, error } = await supabase.from("users").select("role").eq("id", userId).maybeSingle();
+    const directRole = normalizeRole(profile?.role);
+
+    if (directRole) {
+      return directRole;
+    }
+
+    if (error) {
+      console.error("Failed to resolve role from public.users", error);
+    }
+  }
+
+  const adminClient = createSupabaseAdminClient();
+  if (adminClient) {
+    const { data: adminProfile, error: adminError } = await adminClient
+      .from("users")
+      .select("role")
+      .eq("id", userId)
+      .maybeSingle();
+
+    const adminRole = normalizeRole(adminProfile?.role);
+    if (adminRole) {
+      return adminRole;
+    }
+
+    if (adminError) {
+      console.error("Failed to resolve role with service role", adminError);
+    }
+  }
+
+  return normalizeRole(fallbackRole) ?? "employee";
+}
 
 function mapWorkState(value: string | null | undefined): ActiveWorker["status"] {
   if (value === "paused") return "paused";
@@ -94,8 +141,7 @@ export async function requireAdminSession(): Promise<AdminSession> {
     redirect("/auth/login");
   }
 
-  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle();
-  const role = ((profile?.role as UserRole | undefined) ?? "employee") as UserRole;
+  const role = await resolveUserRole(user.id, user.user_metadata?.role, supabase);
 
   if (role !== "manager" && role !== "admin") {
     redirect("/employee");
@@ -119,8 +165,7 @@ export async function getShellRole() {
     return "employee" as UserRole;
   }
 
-  const { data: profile } = await supabase.from("users").select("role").eq("id", user.id).maybeSingle();
-  return ((profile?.role as UserRole | undefined) ?? "employee") as UserRole;
+  return resolveUserRole(user.id, user.user_metadata?.role, supabase);
 }
 
 export async function getAdminSnapshot() {
