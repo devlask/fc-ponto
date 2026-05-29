@@ -60,6 +60,34 @@ export function LiveHistoryTimeline({
       return;
     }
 
+    let active = true;
+
+    void supabase
+      .from("time_entries")
+      .select(
+        "id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime",
+      )
+      .eq("user_id", userId)
+      .order("recorded_at", { ascending: false })
+      .limit(60)
+      .then(({ data }) => {
+        if (!active || !data) {
+          return;
+        }
+
+        const fetchedEntries = [...data]
+          .reverse()
+          .map((row) => mapRealtimeEntry(row as Record<string, unknown>, employeeName, userId));
+
+        setEntries((current) => {
+          if (current.length >= fetchedEntries.length) {
+            return current;
+          }
+
+          return fetchedEntries;
+        });
+      });
+
     const channel = supabase
       .channel(`employee-time-entries-${userId}`)
       .on(
@@ -84,6 +112,7 @@ export function LiveHistoryTimeline({
       .subscribe();
 
     return () => {
+      active = false;
       void supabase.removeChannel(channel);
     };
   }, [employeeName, userId]);
