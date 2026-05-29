@@ -102,6 +102,7 @@ export type EmployeeTimeSnapshot = {
   };
   summaryCards: Array<{ label: string; value: string }>;
   todayEntries: TimeEntry[];
+  userId: string;
 };
 
 export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise<EmployeeTimeSnapshot | null> {
@@ -177,5 +178,6 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
       { label: "Total do dia", value: formatMinutes(summary.totalMinutes) },
     ],
     todayEntries,
+    userId: user.id,
   };
 }

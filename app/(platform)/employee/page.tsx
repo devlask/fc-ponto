@@ -23,6 +23,7 @@ export default async function EmployeePage() {
       initialEntries={snapshot.recentEntries.slice(-8)}
       nextEntryType={snapshot.nextEntryType}
       summaryCards={snapshot.summaryCards}
+      userId={snapshot.userId}
     />
   );
 }

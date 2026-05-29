@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { DailyTimeline } from "@/components/employee/daily-timeline";
+import { LiveHistoryTimeline } from "@/components/employee/live-history-timeline";
 import { getEmployeeTimeSnapshot } from "@/lib/employee-time";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { Badge } from "@/components/ui/badge";
@@ -47,7 +47,12 @@ export default async function EmployeeHistoryPage() {
         </CardHeader>
       </Card>
 
-      <DailyTimeline entries={snapshot.recentEntries} title="Últimos registros" />
+      <LiveHistoryTimeline
+        employeeName={snapshot.employeeName}
+        initialEntries={snapshot.recentEntries}
+        title="Últimos registros"
+        userId={snapshot.userId}
+      />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DailyTimeline } from "@/components/employee/daily-timeline";
+import { LiveHistoryTimeline } from "@/components/employee/live-history-timeline";
 import { PunchPanel } from "@/components/employee/punch-panel";
 import type { EntryType, TimeEntry, WorkState } from "@/types";
 
@@ -11,6 +11,7 @@ type EmployeeDashboardProps = {
   initialEntries: TimeEntry[];
   nextEntryType: EntryType;
   summaryCards: Array<{ label: string; value: string }>;
+  userId: string;
 };
 
 export function EmployeeDashboard({
@@ -19,6 +20,7 @@ export function EmployeeDashboard({
   initialEntries,
   nextEntryType,
   summaryCards,
+  userId,
 }: EmployeeDashboardProps) {
   const [entries, setEntries] = useState<TimeEntry[]>(initialEntries);
 
@@ -38,7 +40,12 @@ export function EmployeeDashboard({
         summaryCards={summaryCards}
         onRegistered={handleRegistered}
       />
-      <DailyTimeline entries={entries} title="Últimos registros" />
+      <LiveHistoryTimeline
+        employeeName={employeeName}
+        initialEntries={entries}
+        title="Últimos registros"
+        userId={userId}
+      />
     </div>
   );
 }
