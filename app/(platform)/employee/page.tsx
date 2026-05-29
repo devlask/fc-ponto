@@ -1,6 +1,5 @@
 import { redirect } from "next/navigation";
-import { DailyTimeline } from "@/components/employee/daily-timeline";
-import { PunchPanel } from "@/components/employee/punch-panel";
+import { EmployeeDashboard } from "@/components/employee/employee-dashboard";
 import { getEmployeeTimeSnapshot } from "@/lib/employee-time";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -18,14 +17,12 @@ export default async function EmployeePage() {
   }
 
   return (
-    <div className="space-y-6">
-      <PunchPanel
-        currentState={snapshot.currentState}
-        employeeName={snapshot.employeeName}
-        nextEntryType={snapshot.nextEntryType}
-        summaryCards={snapshot.summaryCards}
-      />
-      <DailyTimeline entries={snapshot.recentEntries.slice(-8)} title="Últimos registros" />
-    </div>
+    <EmployeeDashboard
+      currentState={snapshot.currentState}
+      employeeName={snapshot.employeeName}
+      initialEntries={snapshot.recentEntries.slice(-8)}
+      nextEntryType={snapshot.nextEntryType}
+      summaryCards={snapshot.summaryCards}
+    />
   );
 }

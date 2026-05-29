@@ -25,12 +25,13 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import type { EntryType, GeoPoint, WorkState } from "@/types";
+import type { EntryType, GeoPoint, TimeEntry, WorkState } from "@/types";
 
 type PunchPanelProps = {
   currentState: WorkState;
   employeeName: string;
   nextEntryType: EntryType;
+  onRegistered?: (entry: TimeEntry) => void;
   summaryCards: Array<{ label: string; value: string }>;
 };
 
@@ -106,7 +107,13 @@ function getStepIndex(step: PunchStep) {
   return 2;
 }
 
-export function PunchPanel({ currentState, employeeName, nextEntryType, summaryCards }: PunchPanelProps) {
+export function PunchPanel({
+  currentState,
+  employeeName,
+  nextEntryType,
+  onRegistered,
+  summaryCards,
+}: PunchPanelProps) {
   const router = useRouter();
   const [isRefreshing, startRefresh] = useTransition();
   const [step, setStep] = useState<PunchStep>("location");
@@ -228,8 +235,11 @@ export function PunchPanel({ currentState, employeeName, nextEntryType, summaryC
         throw new Error(errorPayload?.error || "Falha no envio.");
       }
 
-      const data = (await response.json()) as Receipt;
+      const data = (await response.json()) as Receipt & { entry?: TimeEntry };
       setReceipt(data);
+      if (data.entry) {
+        onRegistered?.(data.entry);
+      }
       setModalStatus("success");
       setModalMessage("Ponto registrado e sincronizado com sucesso.");
       toast.success("Ponto registrado com sucesso.");

@@ -37,6 +37,12 @@ function calculateDistanceMeters(
   return 2 * earthRadius * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+function getLocationLabel(status: string) {
+  if (status === "outside") return "Fora do geofence";
+  if (status === "unknown") return "Geofence indisponível";
+  return "Dentro do geofence";
+}
+
 export async function POST(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
 
@@ -173,6 +179,22 @@ export async function POST(request: NextRequest) {
   return NextResponse.json({
     classification: insertedEntry.is_overtime ? "hora extra" : "horário normal",
     employeeName: (profile?.full_name as string | undefined) || user.email || "Usuário",
+    entry: {
+      deviceLabel: deviceLabel.slice(0, 120),
+      employeeId: user.id,
+      employeeName: (profile?.full_name as string | undefined) || user.email || "Usuário",
+      id: insertedEntry.id,
+      ipAddress: ipAddress || "Não informado",
+      isOvertime: insertedEntry.is_overtime,
+      location: {
+        accuracy,
+        label: getLocationLabel(insertedEntry.geofence_status),
+        lat: latitude,
+        lng: longitude,
+      },
+      timestamp: insertedEntry.recorded_at,
+      type: resolvedType,
+    },
     geofenceStatus: insertedEntry.geofence_status,
     label: entryTypeLabels[resolvedType],
     ok: true,
