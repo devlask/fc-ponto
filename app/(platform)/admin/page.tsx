@@ -4,8 +4,7 @@ import { MapCard } from "@/components/admin/map-card";
 import { ReportExportCard } from "@/components/admin/report-export-card";
 import { TimeEntryList } from "@/components/admin/time-entry-list";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { getAdminSnapshot } from "@/lib/admin-data";
 
 export default async function AdminPage() {
@@ -17,15 +16,33 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden">
-        <CardContent className="grid gap-6 p-6 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <div className="space-y-3">
-            <Badge variant="info">realtime dashboard</Badge>
-            <CardTitle className="text-3xl text-foreground sm:text-4xl">Visibilidade viva da operacao.</CardTitle>
+      <Card className="overflow-hidden border-none bg-[linear-gradient(140deg,rgba(255,255,255,0.96),rgba(240,248,255,0.98))] shadow-[0_26px_72px_rgba(27,57,106,0.10)]">
+        <CardContent className="grid gap-8 p-6 xl:grid-cols-[1.1fr_0.9fr] xl:items-start">
+          <div className="space-y-4">
+            <Badge variant="info">Central administrativa</Badge>
+            <CardTitle className="text-3xl text-foreground sm:text-4xl">
+              Operação, equipe e auditoria em tempo real.
+            </CardTitle>
             <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-              Acompanhe equipe, histórico, aprovações e auditoria em uma operação conectada ao Supabase.
+              Acompanhe funcionários ativos, registros recentes, solicitações de ajuste e exportações com uma leitura
+              mais executiva e menos fragmentada.
             </p>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {[
+                "Equipe e nomes atualizáveis direto no painel.",
+                "Histórico geral com nome do funcionário e contexto do registro.",
+                "Relatórios reais prontos para PDF e Excel.",
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="rounded-[22px] border border-border bg-white/68 p-4 text-sm leading-6 text-muted-foreground dark:bg-white/6"
+                >
+                  {item}
+                </div>
+              ))}
+            </div>
           </div>
+
           <div className="grid gap-3 sm:grid-cols-2">
             {snapshot.cards.map((card, index) => (
               <div
@@ -39,53 +56,24 @@ export default async function AdminPage() {
                 }
               >
                 <p className="text-sm text-muted-foreground">{card.label}</p>
-                <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{card.value}</p>
+                <p className="mt-2 font-heading text-3xl font-semibold text-foreground">{card.value}</p>
               </div>
             ))}
           </div>
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="overview">
-        <TabsList>
-          <TabsTrigger value="overview">Visao geral</TabsTrigger>
-          <TabsTrigger value="history">Historico</TabsTrigger>
-          <TabsTrigger value="logs">Logs</TabsTrigger>
-          <TabsTrigger value="map">Mapa</TabsTrigger>
-          <TabsTrigger value="reports">Relatorios</TabsTrigger>
-        </TabsList>
-        <TabsContent value="overview" className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-          <ActiveWorkersList workers={snapshot.activeWorkers} />
-          <Card className="ink-chip border-border">
-            <CardHeader>
-              <CardTitle className="text-foreground">Motor de jornada</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                "Seg a qui: normal ate 18:00. Sexta: normal ate 17:00.",
-                "Qualquer registro apos o limite configurado vira hora extra automaticamente.",
-                "Jornadas separadas no mesmo dia continuam permitidas e auditadas.",
-              ].map((item) => (
-                <div key={item} className="rounded-[24px] border border-border bg-white/58 p-4 text-sm leading-6 text-muted-foreground dark:bg-white/6">
-                  {item}
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </TabsContent>
-        <TabsContent value="history">
-          <TimeEntryList entries={snapshot.history} />
-        </TabsContent>
-        <TabsContent value="logs">
-          <AuditLogList logs={snapshot.auditLogs} />
-        </TabsContent>
-        <TabsContent value="map">
-          <MapCard point={snapshot.activeWorkers[0]?.location ?? { accuracy: 0, label: "Sem dados", lat: 0, lng: 0 }} />
-        </TabsContent>
-        <TabsContent value="reports">
-          <ReportExportCard />
-        </TabsContent>
-      </Tabs>
+      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <ActiveWorkersList workers={snapshot.activeWorkers} />
+        <MapCard point={snapshot.activeWorkers[0]?.location ?? { accuracy: 0, label: "Sem dados", lat: 0, lng: 0 }} />
+      </div>
+
+      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
+        <TimeEntryList entries={snapshot.history} />
+        <AuditLogList logs={snapshot.auditLogs} />
+      </div>
+
+      <ReportExportCard entries={snapshot.history} />
     </div>
   );
 }

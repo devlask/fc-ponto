@@ -13,10 +13,15 @@ const labels = {
 
 type DailyTimelineProps = {
   entries: TimeEntry[];
+  showEmployeeName?: boolean;
   title?: string;
 };
 
-export function DailyTimeline({ entries, title = "Timeline do dia" }: DailyTimelineProps) {
+export function DailyTimeline({
+  entries,
+  showEmployeeName = false,
+  title = "Timeline do dia",
+}: DailyTimelineProps) {
   return (
     <Card className="ink-chip border-border">
       <CardHeader>
@@ -40,6 +45,9 @@ export function DailyTimeline({ entries, title = "Timeline do dia" }: DailyTimel
                   <p className="font-medium text-foreground">{labels[entry.type]}</p>
                   {entry.isOvertime ? <Badge variant="warning">hora extra</Badge> : <Badge variant="info">normal</Badge>}
                 </div>
+                {showEmployeeName ? (
+                  <p className="mt-2 text-sm font-medium text-foreground">{entry.employeeName}</p>
+                ) : null}
                 <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                   <span className="inline-flex items-center gap-1.5">
                     <Clock3 className="h-4 w-4 text-primary" />

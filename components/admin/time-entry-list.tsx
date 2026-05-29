@@ -6,5 +6,5 @@ type TimeEntryListProps = {
 };
 
 export function TimeEntryList({ entries }: TimeEntryListProps) {
-  return <DailyTimeline entries={entries} title="Histórico geral de registros" />;
+  return <DailyTimeline entries={entries} showEmployeeName title="Histórico geral de registros" />;
 }
