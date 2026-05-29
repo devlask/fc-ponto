@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { entryTypeLabels } from "@/lib/employee-time";
+import { entryTypeLabels, inferNextEntryType } from "@/lib/employee-time";
 import type { EntryType } from "@/types";
 
 const allowedEntryTypes = new Set<EntryType>(["entry", "pause", "return", "exit", "overtime"]);
@@ -53,7 +53,6 @@ export async function POST(request: NextRequest) {
   }
 
   const formData = await request.formData();
-  const type = formData.get("type");
   const latitudeValue = formData.get("latitude");
   const longitudeValue = formData.get("longitude");
   const accuracyValue = formData.get("accuracy");
@@ -62,8 +61,6 @@ export async function POST(request: NextRequest) {
   const selfie = formData.get("selfie");
 
   if (
-    typeof type !== "string" ||
-    !allowedEntryTypes.has(type as EntryType) ||
     typeof latitudeValue !== "string" ||
     typeof longitudeValue !== "string" ||
     typeof accuracyValue !== "string" ||
@@ -92,10 +89,24 @@ export async function POST(request: NextRequest) {
     supabase.from("users").select("full_name").eq("id", user.id).maybeSingle(),
   ]);
 
+  const { data: lastEntry } = await supabase
+    .from("time_entries")
+    .select("event_type")
+    .eq("user_id", user.id)
+    .order("recorded_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  const resolvedType = inferNextEntryType(((lastEntry?.event_type as EntryType | undefined) ?? null) as EntryType | null);
+
+  if (!allowedEntryTypes.has(resolvedType)) {
+    return NextResponse.json({ error: "Não foi possível definir o tipo do registro." }, { status: 400 });
+  }
+
   const selfieBuffer = await selfie.arrayBuffer();
   const selfieHash = toHex(await crypto.subtle.digest("SHA-256", selfieBuffer));
   const timestamp = Date.now();
-  const selfiePath = `${user.id}/${new Date(timestamp).toISOString().slice(0, 10)}/${timestamp}-${type}.jpg`;
+  const selfiePath = `${user.id}/${new Date(timestamp).toISOString().slice(0, 10)}/${timestamp}-${resolvedType}.jpg`;
   const ipAddress = extractIpAddress(request);
   const geofenceEnabled = Boolean(schedule?.geofence_enabled);
 
@@ -133,7 +144,7 @@ export async function POST(request: NextRequest) {
     .insert({
       user_id: user.id,
       schedule_setting_id: (schedule?.id as string | undefined) ?? null,
-      event_type: type,
+      event_type: resolvedType,
       latitude,
       longitude,
       accuracy_meters: accuracy,
@@ -163,8 +174,9 @@ export async function POST(request: NextRequest) {
     classification: insertedEntry.is_overtime ? "hora extra" : "horário normal",
     employeeName: (profile?.full_name as string | undefined) || user.email || "Usuário",
     geofenceStatus: insertedEntry.geofence_status,
-    label: entryTypeLabels[type as EntryType],
+    label: entryTypeLabels[resolvedType],
     ok: true,
+    resolvedType,
     timestamp: insertedEntry.recorded_at,
   });
 }

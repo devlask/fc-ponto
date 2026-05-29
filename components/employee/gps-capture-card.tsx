@@ -1,11 +1,20 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useState } from "react";
-import { LocateFixed, MapPin } from "lucide-react";
+import { LocateFixed, MapPin, ShieldCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { GeoPoint } from "@/types";
+
+const DynamicLocationMap = dynamic(
+  () => import("@/components/employee/location-map").then((mod) => mod.LocationMap),
+  {
+    ssr: false,
+    loading: () => <div className="h-[280px] w-full animate-pulse rounded-[28px] bg-muted" />,
+  },
+);
 
 type GpsCaptureCardProps = {
   onResolved: (location: GeoPoint) => void;
@@ -61,13 +70,25 @@ export function GpsCaptureCard({ onResolved, resetKey = 0 }: GpsCaptureCardProps
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="rounded-2xl border border-border bg-white/55 p-4 text-sm text-muted-foreground dark:bg-white/6">
+        <div className="rounded-[28px] border border-border bg-white/55 p-4 text-sm text-muted-foreground dark:bg-white/6">
           {location ? (
-            <div className="space-y-1">
-              <p>
-                {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
-              </p>
-              <p className="text-muted-foreground">Precisao estimada: {location.accuracy}m</p>
+            <div className="space-y-4">
+              <DynamicLocationMap location={location} />
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-[22px] border border-border bg-background/80 p-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Coordenadas</p>
+                  <p className="mt-2 font-medium text-foreground">
+                    {location.lat.toFixed(5)}, {location.lng.toFixed(5)}
+                  </p>
+                </div>
+                <div className="rounded-[22px] border border-border bg-background/80 p-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">Precisão</p>
+                  <p className="mt-2 inline-flex items-center gap-2 font-medium text-foreground">
+                    <ShieldCheck className="h-4 w-4 text-success" />
+                    {location.accuracy} m
+                  </p>
+                </div>
+              </div>
             </div>
           ) : (
             <p>{loading ? "Capturando localizacao..." : "Nenhuma localizacao capturada."}</p>

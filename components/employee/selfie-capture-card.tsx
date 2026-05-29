@@ -17,6 +17,7 @@ export function SelfieCaptureCard({ onCaptured, resetKey = 0 }: SelfieCaptureCar
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const previewUrlRef = useRef<string | null>(null);
 
   const [preview, setPreview] = useState<string | null>(null);
   const [cameraOpen, setCameraOpen] = useState(false);
@@ -70,7 +71,9 @@ export function SelfieCaptureCard({ onCaptured, resetKey = 0 }: SelfieCaptureCar
       useWebWorker: true,
     });
 
-    setPreview(URL.createObjectURL(compressed));
+    const previewUrl = URL.createObjectURL(compressed);
+    previewUrlRef.current = previewUrl;
+    setPreview(previewUrl);
     onCaptured(compressed);
     stopCamera();
     toast.success("Selfie capturada e comprimida.");
@@ -79,19 +82,20 @@ export function SelfieCaptureCard({ onCaptured, resetKey = 0 }: SelfieCaptureCar
   useEffect(() => {
     return () => {
       stopCamera();
-      if (preview) {
-        URL.revokeObjectURL(preview);
+      if (previewUrlRef.current) {
+        URL.revokeObjectURL(previewUrlRef.current);
       }
     };
-  }, [preview]);
+  }, []);
 
   useEffect(() => {
-    if (preview) {
-      URL.revokeObjectURL(preview);
+    if (previewUrlRef.current) {
+      URL.revokeObjectURL(previewUrlRef.current);
+      previewUrlRef.current = null;
     }
     setPreview(null);
     stopCamera();
-  }, [preview, resetKey]);
+  }, [resetKey]);
 
   return (
     <Card className="ink-chip border-border">

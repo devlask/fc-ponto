@@ -13,6 +13,18 @@ export const entryTypeLabels = {
   overtime: "Hora extra",
 } as const;
 
+export function inferNextEntryType(lastEntryType: TimeEntry["type"] | null): TimeEntry["type"] {
+  if (lastEntryType === "entry" || lastEntryType === "return" || lastEntryType === "overtime") {
+    return "exit";
+  }
+
+  if (lastEntryType === "pause") {
+    return "return";
+  }
+
+  return "entry";
+}
+
 export const workStateLabels: Record<WorkState, string> = {
   working: "Trabalhando",
   paused: "Em pausa",
@@ -79,6 +91,7 @@ export type EmployeeTimeSnapshot = {
   businessDate: string;
   currentState: WorkState;
   employeeName: string;
+  nextEntryType: TimeEntry["type"];
   recentEntries: TimeEntry[];
   role: string;
   summary: {
@@ -145,11 +158,13 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
 
   const summary = calculateWorkedMinutes(todayEntries);
   const currentState = getCurrentWorkState(todayEntries.at(-1) ?? recentEntries.at(-1) ?? null);
+  const nextEntryType = inferNextEntryType((todayEntries.at(-1) ?? recentEntries.at(-1) ?? null)?.type ?? null);
 
   return {
     businessDate,
     currentState,
     employeeName,
+    nextEntryType,
     recentEntries,
     role,
     summary,
