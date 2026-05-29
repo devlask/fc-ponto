@@ -17,7 +17,6 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { toast } from "sonner";
-import { CompanyLogo } from "@/components/branding/company-logo";
 import { GpsCaptureCard } from "@/components/employee/gps-capture-card";
 import { SelfieCaptureCard } from "@/components/employee/selfie-capture-card";
 import { Badge } from "@/components/ui/badge";
@@ -260,16 +259,14 @@ export function PunchPanel({
     <div className="space-y-5">
       <Card className="overflow-hidden border-none bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(244,248,255,0.94))] shadow-[0_26px_70px_rgba(30,86,184,0.14)]">
         <CardContent className="space-y-8 p-6 sm:p-7">
-          <div className="flex items-start justify-between gap-4">
-            <CompanyLogo />
-            <Badge variant="info" className="rounded-full px-3 py-1">
-              Registro guiado
-            </Badge>
-          </div>
-
           <div className="space-y-4">
             <div>
-              <p className="text-sm font-medium text-muted-foreground">Olá, {employeeName}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant="info" className="rounded-full px-3 py-1">
+                  {currentState === "off" ? "Pronto para marcar" : "Jornada em andamento"}
+                </Badge>
+                <p className="text-sm font-medium text-muted-foreground">{employeeName}</p>
+              </div>
               <h2 className="mt-2 font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
                 {nextActionLabel}
               </h2>
@@ -293,23 +290,6 @@ export function PunchPanel({
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-3">
-            {summaryCards.map((item, index) => (
-              <div
-                key={item.label}
-                className={cn(
-                  "rounded-[24px] border p-4",
-                  index === 0 && "border-[#d9e7ff] bg-[#eef5ff]",
-                  index === 1 && "border-[#ffd7ea] bg-[#fff1f8]",
-                  index === 2 && "border-[#ffeab3] bg-[#fff7dd]",
-                )}
-              >
-                <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{item.label}</p>
-                <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{item.value}</p>
-              </div>
-            ))}
-          </div>
-
           <div className="flex flex-col gap-3 sm:flex-row">
             <Button type="button" size="lg" className="h-16 flex-1 rounded-[22px] text-base" onClick={openModal}>
               Marcar ponto
@@ -321,6 +301,23 @@ export function PunchPanel({
         </CardContent>
       </Card>
 
+      <div className="grid gap-3 sm:grid-cols-3">
+        {summaryCards.map((item, index) => (
+          <div
+            key={item.label}
+            className={cn(
+              "rounded-[24px] border p-4",
+              index === 0 && "border-[#d9e7ff] bg-[#eef5ff]",
+              index === 1 && "border-[#ffd7ea] bg-[#fff1f8]",
+              index === 2 && "border-[#ffeab3] bg-[#fff7dd]",
+            )}
+          >
+            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{item.label}</p>
+            <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{item.value}</p>
+          </div>
+        ))}
+      </div>
+
       <AnimatePresence>
         {modalOpen && (
           <motion.div
@@ -329,24 +326,24 @@ export function PunchPanel({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <div className="flex min-h-screen items-end justify-center p-3 sm:items-center sm:p-6">
+            <div className="flex min-h-screen items-end justify-center sm:items-center sm:p-6">
               <motion.div
                 initial={{ opacity: 0, y: 24, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 20, scale: 0.98 }}
                 transition={{ duration: 0.22 }}
                 className={cn(
-                  "max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-[32px] border bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,255,0.98))] shadow-[0_28px_90px_rgba(10,26,61,0.24)]",
+                  "h-[100dvh] w-full overflow-hidden border bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,255,0.98))] shadow-[0_28px_90px_rgba(10,26,61,0.24)] sm:h-auto sm:max-h-[92vh] sm:max-w-2xl sm:rounded-[32px]",
                   modalStatus === "idle" && "border-white/70",
                   modalStatus === "success" && "border-emerald-400/60 shadow-[0_28px_90px_rgba(16,185,129,0.22)]",
                   modalStatus === "error" && "border-rose-400/60 shadow-[0_28px_90px_rgba(244,63,94,0.20)]",
                 )}
               >
-                <div className="max-h-[92vh] overflow-y-auto">
+                <div className="h-[100dvh] overflow-y-auto sm:max-h-[92vh]">
                   <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border/70 bg-white/88 px-5 py-4 backdrop-blur-xl">
                     <div className="min-w-0">
                       <p className="text-sm font-medium text-muted-foreground">FC Comunicação Visual</p>
-                      <p className="font-heading text-xl font-semibold text-foreground">Marcação de ponto</p>
+                      <p className="font-heading text-xl font-semibold text-foreground">Registrar ponto</p>
                     </div>
                     <Button type="button" variant="ghost" className="rounded-full" onClick={closeModal}>
                       <X className="h-4 w-4" />
@@ -371,12 +368,15 @@ export function PunchPanel({
                       </div>
 
                       <div className="space-y-3">
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="flex gap-2 overflow-x-auto pb-1">
                           {stepMeta.map((item, index) => {
                             const active = currentStepIndex >= index;
 
                             return (
-                              <div key={item.id} className="min-w-0 rounded-[20px] border border-border/70 bg-white/70 p-3 text-center dark:bg-white/6">
+                              <div
+                                key={item.id}
+                                className="min-w-[96px] flex-1 rounded-[20px] border border-border/70 bg-white/70 p-3 text-center dark:bg-white/6"
+                              >
                                 <div
                                   className={cn(
                                     "mx-auto flex h-11 w-11 shrink-0 items-center justify-center rounded-full border text-sm font-semibold transition-colors",
@@ -387,7 +387,7 @@ export function PunchPanel({
                                 >
                                   <item.icon className="h-4 w-4" />
                                 </div>
-                                <p className="mt-2 truncate text-sm font-medium text-foreground">{item.label}</p>
+                                <p className="mt-2 text-xs font-medium text-foreground sm:text-sm">{item.label}</p>
                               </div>
                             );
                           })}

@@ -1,12 +1,20 @@
 import { ActiveWorkersList } from "@/components/admin/active-workers-list";
+import { AuditLogList } from "@/components/admin/audit-log-list";
 import { MapCard } from "@/components/admin/map-card";
 import { ReportExportCard } from "@/components/admin/report-export-card";
+import { TimeEntryList } from "@/components/admin/time-entry-list";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { activeWorkers, dashboardCards } from "@/lib/mock-data";
+import { getAdminSnapshot } from "@/lib/admin-data";
 
-export default function AdminPage() {
+export default async function AdminPage() {
+  const snapshot = await getAdminSnapshot();
+
+  if (!snapshot) {
+    return null;
+  }
+
   return (
     <div className="space-y-6">
       <Card className="overflow-hidden">
@@ -15,11 +23,11 @@ export default function AdminPage() {
             <Badge variant="info">realtime dashboard</Badge>
             <CardTitle className="text-3xl text-foreground sm:text-4xl">Visibilidade viva da operacao.</CardTitle>
             <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-              Acompanhe funcionarios ativos, hora extra automatica, aprovacoes e localizacao em tempo real sem trocar de tela.
+              Acompanhe equipe, histórico, aprovações e auditoria em uma operação conectada ao Supabase.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            {dashboardCards.map((card, index) => (
+            {snapshot.cards.map((card, index) => (
               <div
                 key={card.label}
                 className={
@@ -41,11 +49,13 @@ export default function AdminPage() {
       <Tabs defaultValue="overview">
         <TabsList>
           <TabsTrigger value="overview">Visao geral</TabsTrigger>
+          <TabsTrigger value="history">Historico</TabsTrigger>
+          <TabsTrigger value="logs">Logs</TabsTrigger>
           <TabsTrigger value="map">Mapa</TabsTrigger>
           <TabsTrigger value="reports">Relatorios</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-          <ActiveWorkersList workers={activeWorkers} />
+          <ActiveWorkersList workers={snapshot.activeWorkers} />
           <Card className="ink-chip border-border">
             <CardHeader>
               <CardTitle className="text-foreground">Motor de jornada</CardTitle>
@@ -63,8 +73,14 @@ export default function AdminPage() {
             </CardContent>
           </Card>
         </TabsContent>
+        <TabsContent value="history">
+          <TimeEntryList entries={snapshot.history} />
+        </TabsContent>
+        <TabsContent value="logs">
+          <AuditLogList logs={snapshot.auditLogs} />
+        </TabsContent>
         <TabsContent value="map">
-          <MapCard point={activeWorkers[0].location} />
+          <MapCard point={snapshot.activeWorkers[0]?.location ?? { accuracy: 0, label: "Sem dados", lat: 0, lng: 0 }} />
         </TabsContent>
         <TabsContent value="reports">
           <ReportExportCard />

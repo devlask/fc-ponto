@@ -1,0 +1,123 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
+import { BadgePlus, BellRing, ClipboardClock, Download, LayoutDashboard, Logs, Settings2, UserCircle2, Users2 } from "lucide-react";
+import type { UserRole } from "@/types";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+
+type ProfileMenuProps = {
+  installAvailable?: boolean;
+  onInstall?: () => Promise<void>;
+  role: UserRole;
+};
+
+const adminLinks = [
+  { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/team", label: "Equipe", icon: Users2 },
+  { href: "/admin/approvals", label: "Aprovações", icon: ClipboardClock },
+  { href: "/admin/logs", label: "Logs", icon: Logs },
+  { href: "/admin/settings", label: "Jornada", icon: Settings2 },
+];
+
+export function ProfileMenu({ installAvailable = false, onInstall, role }: ProfileMenuProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+  const canManage = role === "admin" || role === "manager";
+
+  useEffect(() => {
+    const onPointerDown = (event: MouseEvent) => {
+      if (!ref.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+
+    window.addEventListener("mousedown", onPointerDown);
+    return () => window.removeEventListener("mousedown", onPointerDown);
+  }, []);
+
+  return (
+    <div ref={ref} className="relative flex items-center gap-2">
+      {installAvailable && onInstall ? (
+        <Button
+          type="button"
+          variant="secondary"
+          size="icon"
+          className="h-11 w-11 shrink-0 rounded-2xl"
+          onClick={() => void onInstall()}
+        >
+          <Download className="h-4 w-4" />
+          <span className="sr-only">Instalar app</span>
+        </Button>
+      ) : null}
+
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        className="h-11 w-11 shrink-0 rounded-2xl border border-border bg-card/70"
+      >
+        <BellRing className="h-4 w-4" />
+        <span className="sr-only">Avisos</span>
+      </Button>
+
+      <Button
+        type="button"
+        variant="ghost"
+        className="h-11 shrink-0 rounded-2xl border border-border bg-card/70 px-3 sm:px-4"
+        onClick={() => setOpen((value) => !value)}
+      >
+        <UserCircle2 className="h-4 w-4" />
+        <span className="sr-only sm:not-sr-only sm:ml-2">Perfil</span>
+      </Button>
+
+      {open && (
+        <div className="absolute right-0 top-[calc(100%+10px)] z-[70] w-[min(92vw,280px)] overflow-hidden rounded-[24px] border border-border bg-white/96 p-2 shadow-[0_24px_54px_rgba(24,39,75,0.16)] backdrop-blur-xl dark:bg-card/96">
+          <div className="space-y-1">
+            <Link
+              href="/profile"
+              className="flex items-center gap-3 rounded-[18px] px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+              onClick={() => setOpen(false)}
+            >
+              <UserCircle2 className="h-4 w-4 text-primary" />
+              Meu perfil
+            </Link>
+
+            {canManage && (
+              <>
+                <div className="px-3 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  Administração
+                </div>
+                {adminLinks.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className={cn(
+                      "flex items-center gap-3 rounded-[18px] px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted",
+                    )}
+                    onClick={() => setOpen(false)}
+                  >
+                    <item.icon className="h-4 w-4 text-primary" />
+                    {item.label}
+                  </Link>
+                ))}
+              </>
+            )}
+
+            {role === "admin" && (
+              <Link
+                href="/admin/team"
+                className="mt-1 flex items-center gap-3 rounded-[18px] border border-dashed border-primary/24 bg-primary/6 px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-primary/10"
+                onClick={() => setOpen(false)}
+              >
+                <BadgePlus className="h-4 w-4 text-primary" />
+                Adicionar usuário
+              </Link>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

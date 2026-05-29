@@ -1,9 +1,12 @@
 import { AppShell } from "@/components/layout/app-shell";
+import { getShellRole } from "@/lib/admin-data";
 
-export default function PlatformLayout({
+export default async function PlatformLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  return <AppShell>{children}</AppShell>;
+  const userRole = await getShellRole();
+
+  return <AppShell userRole={userRole}>{children}</AppShell>;
 }

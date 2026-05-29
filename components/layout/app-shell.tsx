@@ -3,23 +3,23 @@
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserCircle2 } from "lucide-react";
 import { adminNavItems, employeeNavItems } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 import { CompanyLogo } from "@/components/branding/company-logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { InstallPrompt } from "@/components/layout/install-prompt";
-import { Button } from "@/components/ui/button";
+import { ProfileMenu } from "@/components/layout/profile-menu";
+import type { UserRole } from "@/types";
 
 type AppShellProps = {
   children: React.ReactNode;
+  userRole: UserRole;
 };
 
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children, userRole }: AppShellProps) {
   const pathname = usePathname();
   const isAdmin = pathname.startsWith("/admin");
   const navItems = isAdmin ? adminNavItems : employeeNavItems;
-  const profileHref = "/profile";
 
   return (
     <div className="mx-auto min-h-screen max-w-7xl px-4 pb-40 pt-4 sm:px-6 lg:px-8">
@@ -28,18 +28,18 @@ export function AppShell({ children }: AppShellProps) {
         animate={{ opacity: 1, y: 0 }}
         className="mb-5 px-1 py-1"
       >
-        <div className="flex items-center justify-between gap-3 rounded-[24px] bg-white/74 px-4 py-4 shadow-[0_20px_46px_rgba(31,41,55,0.08)] backdrop-blur-xl dark:bg-card/88">
-          <CompanyLogo href={isAdmin ? "/admin" : "/employee"} className="min-w-0" />
+        <div className="flex items-center justify-between gap-2 rounded-[24px] bg-white/74 px-3 py-3 shadow-[0_20px_46px_rgba(31,41,55,0.08)] backdrop-blur-xl dark:bg-card/88 sm:gap-3 sm:px-4 sm:py-4">
+          <div className="min-w-0 flex-1">
+            <CompanyLogo href={isAdmin ? "/admin" : "/employee"} className="min-w-0" />
+          </div>
 
-          <div className="flex items-center gap-2">
-            <InstallPrompt />
+          <div className="flex shrink-0 items-center gap-2">
             <ThemeToggle />
-            <Button asChild variant="ghost" className="rounded-2xl border border-border bg-card/70 px-4">
-              <Link href={profileHref}>
-                <UserCircle2 className="h-4 w-4" />
-                Perfil
-              </Link>
-            </Button>
+            <InstallPrompt>
+              {({ available, promptInstall }) => (
+                <ProfileMenu installAvailable={available} onInstall={promptInstall} role={userRole} />
+              )}
+            </InstallPrompt>
           </div>
         </div>
       </motion.header>
