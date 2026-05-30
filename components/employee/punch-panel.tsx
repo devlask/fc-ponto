@@ -383,7 +383,7 @@ export function PunchPanel({
       <AnimatePresence>
         {modalOpen && (
           <motion.div
-            className="fixed inset-0 z-[80] bg-slate-950/38 backdrop-blur-[3px]"
+            className="fixed inset-0 z-[220] bg-slate-950/38 backdrop-blur-[3px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -395,25 +395,31 @@ export function PunchPanel({
                 exit={{ opacity: 0, y: 20, scale: 0.98 }}
                 transition={{ duration: 0.22 }}
                 className={cn(
-                  "h-[100dvh] w-full overflow-hidden border bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,255,0.98))] shadow-[0_28px_90px_rgba(10,26,61,0.24)] sm:h-auto sm:max-h-[92vh] sm:max-w-2xl sm:rounded-[32px]",
+                  "relative h-[100dvh] w-full overflow-hidden border bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,255,0.98))] shadow-[0_28px_90px_rgba(10,26,61,0.24)] sm:h-auto sm:max-h-[92vh] sm:max-w-2xl sm:rounded-[32px]",
                   modalStatus === "idle" && "border-white/70",
                   modalStatus === "success" && "border-emerald-400/60 shadow-[0_28px_90px_rgba(16,185,129,0.22)]",
                   modalStatus === "error" && "border-rose-400/60 shadow-[0_28px_90px_rgba(244,63,94,0.20)]",
                 )}
               >
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  className="absolute right-4 top-[calc(env(safe-area-inset-top,0px)+12px)] z-20 rounded-full bg-white/92 shadow-[0_14px_34px_rgba(10,26,61,0.12)]"
+                  onClick={closeModal}
+                >
+                  <X className="h-4 w-4" />
+                  <span className="sr-only">Fechar modal</span>
+                </Button>
+
                 <div className="h-[100dvh] overflow-y-auto sm:max-h-[92vh]">
-                  <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border/70 bg-white/88 px-5 py-4 backdrop-blur-xl">
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium text-muted-foreground">FC Comunicação Visual</p>
-                      <p className="font-heading text-xl font-semibold text-foreground">Registrar ponto</p>
-                    </div>
-                    <Button type="button" variant="ghost" className="rounded-full" onClick={closeModal}>
-                      <X className="h-4 w-4" />
-                    </Button>
+                  <div className="px-5 pb-2 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:px-7 sm:pt-8">
+                    <p className="text-sm font-medium text-muted-foreground">FC Comunicação Visual</p>
+                    <p className="font-heading text-xl font-semibold text-foreground">Registrar ponto</p>
                   </div>
 
                   {modalStatus === "idle" ? (
-                    <div className="space-y-6 p-5 sm:p-7">
+                    <div className="space-y-6 px-5 pb-8 pt-2 sm:px-7 sm:pb-7">
                       <div className="flex items-center justify-between gap-3">
                         <Button
                           type="button"
