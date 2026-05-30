@@ -27,9 +27,12 @@ export type EditRequest = {
   employeeName: string;
   requestedAt: string;
   date: string;
+  kind?: "adjust" | "overtime" | "justification";
   reason: string;
   status: ApprovalStatus;
   requestedTime: string;
+  reviewNotes?: string | null;
+  requestedEventType?: EntryType;
 };
 
 export type ActiveWorker = {

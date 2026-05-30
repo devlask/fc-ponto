@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { ClipboardPenLine, Clock3, Home, LayoutDashboard, Settings2, UserCircle2, Users2 } from "lucide-react";
+import { CalendarRange, ClipboardPenLine, Clock3, Home, LayoutDashboard, Settings2, UserCircle2, Users2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { adminNavItems, employeeNavItems } from "@/lib/constants";
@@ -29,6 +29,7 @@ export function AppShell({ children, userRole }: AppShellProps) {
       }
     : {
         "/employee": Home,
+        "/employee/journey": CalendarRange,
         "/employee/history": Clock3,
         "/employee/requests": ClipboardPenLine,
         "/profile": UserCircle2,
@@ -61,7 +62,7 @@ export function AppShell({ children, userRole }: AppShellProps) {
       </motion.div>
 
       <nav
-        className="fixed inset-x-0 z-50 mx-auto max-w-lg px-4"
+        className="fixed inset-x-0 z-50 mx-auto max-w-xl px-4"
         style={{ bottom: "calc(env(safe-area-inset-bottom, 0px) + 12px)" }}
       >
         <div className="glass-panel flex items-center justify-between rounded-[30px] border border-border/90 px-3 py-3 backdrop-blur-xl shadow-[0_18px_50px_rgba(35,31,32,0.08)]">

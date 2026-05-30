@@ -1,7 +1,8 @@
 import type { WorkScheduleSettings } from "@/types";
 
 export const employeeNavItems = [
-  { href: "/employee", label: "Ponto" },
+  { href: "/employee", label: "Inicio" },
+  { href: "/employee/journey", label: "Jornada" },
   { href: "/employee/history", label: "Historico" },
   { href: "/employee/requests", label: "Solicitacoes" },
   { href: "/profile", label: "Perfil" },

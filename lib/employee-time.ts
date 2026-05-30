@@ -4,7 +4,7 @@ import { unstable_noStore as noStore } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { calculateWorkedMinutes } from "@/lib/time";
 import { formatMinutes } from "@/lib/utils";
-import type { TimeEntry, WorkState } from "@/types";
+import type { EditRequest, TimeEntry, WorkState } from "@/types";
 
 export const entryTypeLabels = {
   entry: "Entrada",
@@ -186,6 +186,29 @@ export type EmployeeTimeSnapshot = {
   userId: string;
 };
 
+export type EmployeeRequestsSnapshot = {
+  requests: EditRequest[];
+};
+
+function extractRequestKind(reason: string): EditRequest["kind"] {
+  if (reason.startsWith("[Hora extra] ")) {
+    return "overtime";
+  }
+
+  if (reason.startsWith("[Justificativa] ")) {
+    return "justification";
+  }
+
+  return "adjust";
+}
+
+function stripRequestPrefix(reason: string) {
+  return reason
+    .replace("[Hora extra] ", "")
+    .replace("[Justificativa] ", "")
+    .replace("[Ajuste de horário] ", "");
+}
+
 export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise<EmployeeTimeSnapshot | null> {
   noStore();
 
@@ -237,7 +260,7 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
       )
       .eq("user_id", user.id)
       .order("recorded_at", { ascending: false })
-      .limit(60),
+      .limit(240),
   ]);
 
   const todayEntries = (todayResult.data ?? []).map((entry) => mapDbEntryToTimeEntry(entry, user.id, employeeName));
@@ -300,5 +323,53 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
     ],
     todayEntries,
     userId: user.id,
+  };
+}
+
+export async function getEmployeeRequestsSnapshot(
+  supabase: SupabaseClient,
+): Promise<EmployeeRequestsSnapshot | null> {
+  noStore();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return null;
+  }
+
+  const [{ data: profile }, { data: rows }] = await Promise.all([
+    supabase.from("users").select("full_name").eq("id", user.id).maybeSingle(),
+    supabase
+      .from("edit_requests")
+      .select("id, requested_date, requested_timestamp, requested_event_type, reason, status, created_at, review_notes")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(100),
+  ]);
+
+  const employeeName =
+    (profile?.full_name as string | undefined) ||
+    (typeof user.user_metadata?.full_name === "string" ? user.user_metadata.full_name : undefined) ||
+    user.email ||
+    "Usuário";
+
+  return {
+    requests: ((rows ?? []) as Record<string, unknown>[]).map((row) => ({
+      id: String(row.id),
+      employeeName,
+      requestedAt: String(row.created_at),
+      date: String(row.requested_date),
+      kind: extractRequestKind(String(row.reason)),
+      reason: stripRequestPrefix(String(row.reason)),
+      reviewNotes: typeof row.review_notes === "string" ? row.review_notes : null,
+      status: String(row.status) as EditRequest["status"],
+      requestedEventType: String(row.requested_event_type) as EditRequest["requestedEventType"],
+      requestedTime: new Intl.DateTimeFormat("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(new Date(String(row.requested_timestamp))),
+    })),
   };
 }
