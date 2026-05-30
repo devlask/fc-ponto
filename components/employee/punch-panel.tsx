@@ -206,7 +206,7 @@ export function PunchPanel({
 
   const submitPunch = async () => {
     if (!location || !selfie || !deviceId || !deviceLabel) {
-      toast.error("Finalize GPS e selfie antes de confirmar.");
+      toast.error("Conclua GPS e selfie antes de confirmar a marcação.");
       return;
     }
 
@@ -237,13 +237,13 @@ export function PunchPanel({
         onRegistered?.(data.entry);
       }
       setModalStatus("success");
-      setModalMessage("Ponto registrado e sincronizado com sucesso.");
+      setModalMessage("Ponto registrado, salvo no histórico e sincronizado com sucesso.");
       toast.success("Ponto registrado com sucesso.");
       startRefresh(() => {
         router.refresh();
       });
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Não foi possível registrar o ponto.";
+      const message = error instanceof Error ? error.message : "Não foi possível registrar o ponto agora.";
       setModalStatus("error");
       setModalMessage(message);
       toast.error(message);
@@ -462,7 +462,7 @@ export function PunchPanel({
                           <div>
                             <h3 className="font-heading text-2xl font-semibold text-foreground">Confirme sua localização</h3>
                             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                              Primeiro capturamos sua posição atual para validar o registro de ponto.
+                              Primeiro validamos sua posição atual. Sem GPS confirmado, o ponto não é enviado.
                             </p>
                           </div>
 
@@ -487,7 +487,7 @@ export function PunchPanel({
                           <div>
                             <h3 className="font-heading text-2xl font-semibold text-foreground">Capture sua selfie</h3>
                             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                              A foto é registrada apenas para validação do ponto e auditoria do evento.
+                              A selfie confirma a presença no momento da marcação e fica vinculada à auditoria do evento.
                             </p>
                           </div>
 
@@ -512,7 +512,7 @@ export function PunchPanel({
                           <div>
                             <h3 className="font-heading text-2xl font-semibold text-foreground">Confirmar ponto</h3>
                             <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                              Revise os dados abaixo antes de enviar o registro definitivo.
+                              Revise horário, localização e dispositivo antes de concluir o registro definitivo.
                             </p>
                           </div>
 

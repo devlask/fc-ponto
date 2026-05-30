@@ -18,6 +18,16 @@ export function InviteUserForm({ canSetAdmin = false }: InviteUserFormProps) {
   const [role, setRole] = useState<"employee" | "manager" | "admin">("employee");
 
   const invite = async () => {
+    if (!fullName.trim()) {
+      toast.error("Informe o nome completo do usuário.");
+      return;
+    }
+
+    if (!email.trim()) {
+      toast.error("Informe um e-mail válido para enviar o convite.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -39,7 +49,7 @@ export function InviteUserForm({ canSetAdmin = false }: InviteUserFormProps) {
         throw new Error(payload?.error || "Falha ao enviar convite.");
       }
 
-      toast.success("Convite enviado por e-mail com sucesso.");
+      toast.success("Convite enviado. O usuário receberá um e-mail para criar a senha.");
       setFullName("");
       setEmail("");
       setRole("employee");

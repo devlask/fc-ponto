@@ -23,6 +23,16 @@ export function ManualAdjustmentForm({ userId }: ManualAdjustmentFormProps) {
   const [note, setNote] = useState("");
 
   const submit = async () => {
+    if (!recordedAt) {
+      toast.error("Selecione a data e hora do ajuste.");
+      return;
+    }
+
+    if (!reason.trim()) {
+      toast.error("Informe o motivo do ajuste manual.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -46,7 +56,7 @@ export function ManualAdjustmentForm({ userId }: ManualAdjustmentFormProps) {
         throw new Error(payload?.error || "Falha ao registrar ajuste.");
       }
 
-      toast.success("Ajuste manual registrado.");
+      toast.success("Ajuste manual registrado no histórico do funcionário.");
       setRecordedAt("");
       setReason("");
       setEventType("entry");
@@ -90,7 +100,7 @@ export function ManualAdjustmentForm({ userId }: ManualAdjustmentFormProps) {
         </div>
         <div className="space-y-2">
           <Label htmlFor="reason">Motivo</Label>
-          <Input id="reason" value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Ex.: ajuste manual aprovado pelo RH" />
+          <Input id="reason" value={reason} onChange={(event) => setReason(event.target.value)} placeholder="Ex.: esquecimento validado pela gerência" />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">

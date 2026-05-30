@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { Pencil, Save } from "lucide-react";
 import { toast } from "sonner";
@@ -39,6 +39,19 @@ export function TeamTable({ members: initialMembers }: TeamTableProps) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [nameDraft, setNameDraft] = useState("");
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | AdminTeamMember["status"]>("all");
+
+  const filteredMembers = useMemo(
+    () =>
+      members.filter((member) => {
+        const matchesStatus = statusFilter === "all" || member.status === statusFilter;
+        const searchable = `${member.fullName} ${member.email} ${member.lastEvent}`.toLowerCase();
+        const matchesQuery = searchable.includes(query.trim().toLowerCase());
+        return matchesStatus && matchesQuery;
+      }),
+    [members, query, statusFilter],
+  );
 
   const startEdit = (member: AdminTeamMember) => {
     setEditingId(member.id);
@@ -84,8 +97,27 @@ export function TeamTable({ members: initialMembers }: TeamTableProps) {
         </p>
       </CardHeader>
       <CardContent>
+        <div className="mb-4 grid gap-3 md:grid-cols-[1.2fr_0.8fr]">
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Buscar por nome, e-mail ou evento"
+          />
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as "all" | AdminTeamMember["status"])}
+            className="h-11 w-full rounded-[18px] border border-border bg-background px-3 text-sm text-foreground outline-none"
+          >
+            <option value="all">Todos os status</option>
+            <option value="working">Trabalhando</option>
+            <option value="overtime">Hora extra</option>
+            <option value="paused">Em pausa</option>
+            <option value="off">Fora</option>
+          </select>
+        </div>
+
         <div className="space-y-3">
-          {members.map((member) => {
+          {filteredMembers.map((member) => {
             const isEditing = editingId === member.id;
 
             return (
@@ -140,6 +172,11 @@ export function TeamTable({ members: initialMembers }: TeamTableProps) {
               </div>
             );
           })}
+          {filteredMembers.length === 0 ? (
+            <div className="rounded-[24px] border border-dashed border-border bg-white/58 p-4 text-sm text-muted-foreground dark:bg-white/6">
+              Nenhum funcionário encontrado com esses filtros.
+            </div>
+          ) : null}
         </div>
       </CardContent>
     </Card>

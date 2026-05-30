@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import type { AdminEditRequest } from "@/lib/admin-data";
 
 type ApprovalsBoardProps = {
@@ -30,6 +31,19 @@ function eventLabel(type: AdminEditRequest["requestedEventType"]) {
 export function ApprovalsBoard({ requests: initialRequests }: ApprovalsBoardProps) {
   const [requests, setRequests] = useState(initialRequests);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"all" | AdminEditRequest["status"]>("all");
+
+  const filteredRequests = useMemo(
+    () =>
+      requests.filter((request) => {
+        const matchesStatus = statusFilter === "all" || request.status === statusFilter;
+        const searchable = `${request.requesterName} ${request.requesterEmail} ${request.reason}`.toLowerCase();
+        const matchesQuery = searchable.includes(query.trim().toLowerCase());
+        return matchesStatus && matchesQuery;
+      }),
+    [query, requests, statusFilter],
+  );
 
   const review = async (id: string, status: "approved" | "rejected") => {
     setLoadingId(id);
@@ -49,10 +63,8 @@ export function ApprovalsBoard({ requests: initialRequests }: ApprovalsBoardProp
         throw new Error(payload?.error || "Falha na revisão.");
       }
 
-      setRequests((current) =>
-        current.map((request) => (request.id === id ? { ...request, status } : request)),
-      );
-      toast.success(status === "approved" ? "Solicitação aprovada." : "Solicitação rejeitada.");
+      setRequests((current) => current.map((request) => (request.id === id ? { ...request, status } : request)));
+      toast.success(status === "approved" ? "Solicitação aprovada com sucesso." : "Solicitação recusada com sucesso.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível revisar a solicitação.");
     } finally {
@@ -66,13 +78,31 @@ export function ApprovalsBoard({ requests: initialRequests }: ApprovalsBoardProp
         <CardTitle className="text-foreground">Aprovações de alteração de ponto</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {requests.length === 0 ? (
+        <div className="grid gap-3 md:grid-cols-[1.2fr_0.8fr]">
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Buscar por nome, e-mail ou motivo"
+          />
+          <select
+            value={statusFilter}
+            onChange={(event) => setStatusFilter(event.target.value as "all" | AdminEditRequest["status"])}
+            className="h-11 w-full rounded-[18px] border border-border bg-background px-3 text-sm text-foreground outline-none"
+          >
+            <option value="all">Todos os status</option>
+            <option value="pending">Em análise</option>
+            <option value="approved">Aprovados</option>
+            <option value="rejected">Recusados</option>
+          </select>
+        </div>
+
+        {filteredRequests.length === 0 ? (
           <div className="rounded-[22px] border border-dashed border-border bg-white/60 p-6 text-sm text-muted-foreground dark:bg-white/6">
-            Nenhuma solicitação pendente.
+            Nenhuma solicitação encontrada com esses filtros.
           </div>
         ) : null}
 
-        {requests.map((request) => (
+        {filteredRequests.map((request) => (
           <div key={request.id} className="rounded-[24px] border border-border bg-white/58 p-4 dark:bg-white/6">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>

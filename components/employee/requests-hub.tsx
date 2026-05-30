@@ -71,6 +71,21 @@ export function RequestsHub({ initialRequests }: RequestsHubProps) {
   const copy = useMemo(() => requestCopy(kind), [kind]);
 
   const submit = async () => {
+    if (!date) {
+      toast.error("Selecione a data da solicitação.");
+      return;
+    }
+
+    if (!requestedTime) {
+      toast.error("Informe o horário correto que deseja solicitar.");
+      return;
+    }
+
+    if (reason.trim().length < 6) {
+      toast.error("Descreva o motivo com um pouco mais de detalhe.");
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -100,7 +115,7 @@ export function RequestsHub({ initialRequests }: RequestsHubProps) {
       setRequestedTime("");
       setReason("");
       setEventType("entry");
-      toast.success("Solicitação enviada.");
+      toast.success("Solicitação enviada para análise.");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Não foi possível enviar a solicitação.");
     } finally {
