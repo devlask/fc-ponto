@@ -1,5 +1,7 @@
-import { BellRing, ChevronRight, LogOut, ShieldCheck, Smartphone, Sparkles, User } from "lucide-react";
+import { BellRing, ChevronRight, LogOut, ShieldCheck, Smartphone, Sparkles } from "lucide-react";
+import { AvatarUploader } from "@/components/profile/avatar-uploader";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getSignedStorageUrl } from "@/lib/storage";
 import { Card, CardContent } from "@/components/ui/card";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { getEmployeeRequestsSnapshot, getEmployeeTimeSnapshot } from "@/lib/employee-time";
@@ -10,7 +12,8 @@ export default async function ProfilePage() {
   const { data: authData } = supabase ? await supabase.auth.getUser() : { data: { user: null } };
 
   const user = authData.user;
-  let profile: { full_name: string; role: string; email: string } | null = null;
+  let profile: { avatar_url?: string | null; full_name: string; role: string; email: string } | null = null;
+  let avatarUrl: string | null = null;
   let toleranceMinutes = 10;
   let dailyRules:
     | Record<string, { enabled?: boolean; start?: string; end?: string }>
@@ -20,7 +23,7 @@ export default async function ProfilePage() {
 
   if (supabase && user) {
     const [{ data }, { data: schedule }, timeSnapshot, requestsSnapshot] = await Promise.all([
-      supabase.from("users").select("full_name, role, email").eq("id", user.id).maybeSingle(),
+      supabase.from("users").select("full_name, role, email, avatar_url").eq("id", user.id).maybeSingle(),
       supabase
         .from("work_schedule_settings")
         .select("tolerance_minutes, daily_rules")
@@ -39,6 +42,7 @@ export default async function ProfilePage() {
         : undefined;
     summary = timeSnapshot?.summary ?? summary;
     requestsCount = requestsSnapshot?.requests.filter((request) => request.status === "pending").length ?? 0;
+    avatarUrl = await getSignedStorageUrl("profile-avatars", typeof data?.avatar_url === "string" ? data.avatar_url : null);
   }
 
   const displayName = profile?.full_name || user?.user_metadata?.full_name || "Usuário";
@@ -56,9 +60,7 @@ export default async function ProfilePage() {
       <Card className="overflow-hidden border-none bg-white/78 shadow-[0_16px_36px_rgba(35,31,32,0.05)]">
         <CardContent className="space-y-5 p-6">
           <div className="flex items-center gap-4">
-            <div className="flex h-20 w-20 items-center justify-center rounded-[28px] bg-primary/12 text-primary">
-              <User className="h-8 w-8" />
-            </div>
+            <AvatarUploader initialUrl={avatarUrl} name={displayName} />
             <div>
               <h1 className="font-heading text-3xl font-semibold text-foreground">{displayName}</h1>
               <p className="mt-1 text-sm text-muted-foreground">

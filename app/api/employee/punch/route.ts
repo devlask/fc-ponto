@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { getSignedStorageUrl } from "@/lib/storage";
 import { entryTypeLabels, inferNextEntryType } from "@/lib/employee-time";
 import type { EntryType } from "@/types";
 
@@ -168,13 +169,15 @@ export async function POST(request: NextRequest) {
         userAgent: request.headers.get("user-agent"),
       },
     })
-    .select("id, event_type, recorded_at, is_overtime, geofence_status")
+    .select("id, event_type, recorded_at, is_overtime, geofence_status, selfie_path")
     .single();
 
   if (insertError) {
     await supabase.storage.from("time-selfies").remove([selfiePath]);
     return NextResponse.json({ error: "Falha ao gravar o registro no banco." }, { status: 500 });
   }
+
+  const selfieUrl = await getSignedStorageUrl("time-selfies", typeof insertedEntry.selfie_path === "string" ? insertedEntry.selfie_path : selfiePath);
 
   return NextResponse.json({
     classification: insertedEntry.is_overtime ? "hora extra" : "horário normal",
@@ -192,6 +195,8 @@ export async function POST(request: NextRequest) {
         lat: latitude,
         lng: longitude,
       },
+      selfiePath,
+      selfieUrl,
       timestamp: insertedEntry.recorded_at,
       type: resolvedType,
     },

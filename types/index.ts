@@ -20,6 +20,8 @@ export type TimeEntry = {
   isOvertime: boolean;
   ipAddress: string;
   deviceLabel: string;
+  selfiePath?: string | null;
+  selfieUrl?: string | null;
 };
 
 export type EditRequest = {

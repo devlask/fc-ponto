@@ -2,6 +2,7 @@ import "server-only";
 
 import { redirect } from "next/navigation";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { getSignedStorageUrl } from "@/lib/storage";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { calculateWorkedMinutes } from "@/lib/time";
 import { formatMinutes } from "@/lib/utils";
@@ -287,7 +288,21 @@ function mapTimeEntry(row: SupabaseRow, userName: string, userRole: UserRole, us
     ipAddress: typeof row.ip_address === "string" ? row.ip_address : "Não informado",
     deviceLabel: typeof row.device_label === "string" ? row.device_label : "Dispositivo não informado",
     role: userRole,
+    selfiePath: typeof row.selfie_path === "string" ? row.selfie_path : null,
+    selfieUrl: null,
   };
+}
+
+async function attachSelfieUrls(entries: AdminTimeEntryRow[]) {
+  return Promise.all(
+    entries.map(async (entry) => ({
+      ...entry,
+      selfieUrl:
+        entry.selfiePath && entry.selfiePath !== "admin/manual-adjustment"
+          ? await getSignedStorageUrl("time-selfies", entry.selfiePath)
+          : null,
+    })),
+  );
 }
 
 export async function requireAdminSession(): Promise<AdminSession> {
@@ -346,7 +361,7 @@ export async function getAdminSnapshot() {
     supabase.from("vw_active_workers").select("*"),
     supabase
       .from("time_entries")
-      .select("id, user_id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime")
+      .select("id, user_id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path")
       .order("recorded_at", { ascending: false })
       .limit(120),
     supabase
@@ -386,7 +401,7 @@ export async function getAdminSnapshot() {
     },
   })) satisfies ActiveWorker[];
 
-  const history = ((timeEntriesResult.data ?? []) as SupabaseRow[]).map((row) => {
+  const history = await attachSelfieUrls(((timeEntriesResult.data ?? []) as SupabaseRow[]).map((row) => {
     const userProfile = userMap.get(String(row.user_id));
 
     return mapTimeEntry(
@@ -395,7 +410,7 @@ export async function getAdminSnapshot() {
       userProfile?.role ?? "employee",
       String(row.user_id),
     );
-  });
+  }));
 
   const auditLogs = ((auditLogsResult.data ?? []) as SupabaseRow[]).map((row) => {
     const actor = userMap.get(String(row.actor_user_id ?? ""));
@@ -708,7 +723,7 @@ export async function getAdminEmployeeDetail(userId: string, periodDays: number 
     supabase
       .from("time_entries")
       .select(
-        "id, user_id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime",
+        "id, user_id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path",
       )
       .eq("user_id", userId)
       .order("recorded_at", { ascending: false })
@@ -719,9 +734,9 @@ export async function getAdminEmployeeDetail(userId: string, periodDays: number 
     return null;
   }
 
-  const entries = [...(entriesResult ?? [])]
+  const entries = await attachSelfieUrls([...(entriesResult ?? [])]
     .reverse()
-    .map((row) => mapTimeEntry(row, String(userProfile.full_name), String(userProfile.role) as UserRole, userId));
+    .map((row) => mapTimeEntry(row, String(userProfile.full_name), String(userProfile.role) as UserRole, userId)));
   const filteredEntries =
     periodDays === null
       ? entries

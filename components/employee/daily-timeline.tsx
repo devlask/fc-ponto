@@ -74,8 +74,23 @@ export function DailyTimeline({
                   </span>
                 </div>
                 <p className="mt-2 text-xs text-muted-foreground">
+                  Localização exata: {entry.location.lat.toFixed(5)}, {entry.location.lng.toFixed(5)} • precisão {entry.location.accuracy}m
+                </p>
+                <p className="mt-2 text-xs text-muted-foreground">
                   {entry.deviceLabel} • IP {entry.ipAddress}
                 </p>
+                {entry.selfieUrl ? (
+                  <div className="mt-4 overflow-hidden rounded-[18px] border border-border bg-white/78 p-2 dark:bg-white/6">
+                    <div className="relative aspect-[4/3] w-full overflow-hidden rounded-[14px]">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={entry.selfieUrl}
+                        alt={`Selfie do registro de ${entry.employeeName}`}
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  </div>
+                ) : null}
               </div>
             </div>
           ))}

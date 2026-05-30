@@ -2,6 +2,7 @@ import "server-only";
 
 import { unstable_noStore as noStore } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { getSignedStorageUrl } from "@/lib/storage";
 import { calculateWorkedMinutes } from "@/lib/time";
 import { formatMinutes } from "@/lib/utils";
 import type { EditRequest, TimeEntry, WorkState } from "@/types";
@@ -155,7 +156,21 @@ function mapDbEntryToTimeEntry(
     isOvertime: Boolean(entry.is_overtime),
     ipAddress: typeof entry.ip_address === "string" ? entry.ip_address : "Não informado",
     deviceLabel: typeof entry.device_label === "string" ? entry.device_label : "Dispositivo não informado",
+    selfiePath: typeof entry.selfie_path === "string" ? entry.selfie_path : null,
+    selfieUrl: null,
   };
+}
+
+async function attachSelfieUrls(entries: TimeEntry[]) {
+  return Promise.all(
+    entries.map(async (entry) => ({
+      ...entry,
+      selfieUrl:
+        entry.selfiePath && entry.selfiePath !== "admin/manual-adjustment"
+          ? await getSignedStorageUrl("time-selfies", entry.selfiePath)
+          : null,
+    })),
+  );
 }
 
 function getCurrentWorkState(lastEntry: TimeEntry | null): WorkState {
@@ -247,7 +262,7 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
     supabase
       .from("time_entries")
       .select(
-        "id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime",
+        "id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path",
       )
       .eq("user_id", user.id)
       .eq("business_date", businessDate)
@@ -256,17 +271,17 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
     supabase
       .from("time_entries")
       .select(
-        "id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime",
+        "id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path",
       )
       .eq("user_id", user.id)
       .order("recorded_at", { ascending: false })
       .limit(240),
   ]);
 
-  const todayEntries = (todayResult.data ?? []).map((entry) => mapDbEntryToTimeEntry(entry, user.id, employeeName));
-  const recentEntries = [...(recentResult.data ?? [])]
+  const todayEntries = await attachSelfieUrls((todayResult.data ?? []).map((entry) => mapDbEntryToTimeEntry(entry, user.id, employeeName)));
+  const recentEntries = await attachSelfieUrls([...(recentResult.data ?? [])]
     .reverse()
-    .map((entry) => mapDbEntryToTimeEntry(entry, user.id, employeeName));
+    .map((entry) => mapDbEntryToTimeEntry(entry, user.id, employeeName)));
 
   const summary = calculateWorkedMinutes(todayEntries);
   const currentState = getCurrentWorkState(todayEntries.at(-1) ?? recentEntries.at(-1) ?? null);

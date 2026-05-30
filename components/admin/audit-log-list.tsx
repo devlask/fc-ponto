@@ -1,9 +1,15 @@
+"use client";
+
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import type { AdminAuditLog } from "@/lib/admin-data";
 
 type AuditLogListProps = {
   logs: AdminAuditLog[];
 };
+
+type FilterKey = "all" | "invites" | "approvals" | "adjustments" | "users";
 
 function targetLabel(targetTable: string) {
   if (targetTable === "users") return "usuário";
@@ -103,18 +109,59 @@ function describeLog(log: AdminAuditLog) {
 }
 
 export function AuditLogList({ logs }: AuditLogListProps) {
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const filteredLogs = useMemo(() => {
+    if (filter === "invites") {
+      return logs.filter((log) => log.action === "admin_convidou_usuario");
+    }
+
+    if (filter === "approvals") {
+      return logs.filter((log) => log.action === "admin_aprovou_solicitacao" || log.action === "admin_recusou_solicitacao");
+    }
+
+    if (filter === "adjustments") {
+      return logs.filter((log) => log.action === "admin_lancou_ajuste_manual" || (log.targetTable === "time_entries" && log.action === "insert"));
+    }
+
+    if (filter === "users") {
+      return logs.filter((log) => log.action === "admin_editou_usuario" || (log.targetTable === "users" && log.action === "update"));
+    }
+
+    return logs;
+  }, [filter, logs]);
+
   return (
     <Card className="ink-chip border-border">
       <CardHeader>
         <CardTitle className="text-foreground">Logs de auditoria</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {logs.length === 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {[
+            { key: "all", label: "Tudo" },
+            { key: "invites", label: "Convites" },
+            { key: "approvals", label: "Aprovações" },
+            { key: "adjustments", label: "Ajustes" },
+            { key: "users", label: "Usuários" },
+          ].map((item) => (
+            <Button
+              key={item.key}
+              type="button"
+              size="sm"
+              variant={filter === item.key ? "default" : "outline"}
+              className="rounded-full"
+              onClick={() => setFilter(item.key as FilterKey)}
+            >
+              {item.label}
+            </Button>
+          ))}
+        </div>
+        {filteredLogs.length === 0 ? (
           <div className="rounded-[22px] border border-dashed border-border bg-white/60 p-6 text-sm text-muted-foreground dark:bg-white/6">
             Nenhum log encontrado.
           </div>
         ) : null}
-        {logs.map((log) => (
+        {filteredLogs.map((log) => (
           <div key={log.id} className="rounded-[22px] border border-border bg-white/58 p-4 dark:bg-white/6">
             {(() => {
               const description = describeLog(log);
