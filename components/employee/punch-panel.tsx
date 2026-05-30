@@ -24,14 +24,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import type { EntryType, GeoPoint, TimeEntry, WorkState } from "@/types";
+import type { EmployeePrimaryAction, EmployeeQuickSummary } from "@/lib/employee-time";
+import type { GeoPoint, TimeEntry, WorkState } from "@/types";
 
 type PunchPanelProps = {
   currentState: WorkState;
   employeeName: string;
-  nextEntryType: EntryType;
+  greeting: string;
   onRegistered?: (entry: TimeEntry) => void;
-  summaryCards: Array<{ label: string; value: string }>;
+  primaryAction: EmployeePrimaryAction;
+  quickSummary: EmployeeQuickSummary;
+  todayEntries: TimeEntry[];
 };
 
 type PunchStep = "location" | "selfie" | "confirm";
@@ -52,21 +55,6 @@ const stepMeta: Array<{
   { id: "selfie", label: "Selfie", icon: Camera },
   { id: "confirm", label: "Confirmar", icon: Fingerprint },
 ];
-
-const nextActionLabels: Record<EntryType, string> = {
-  entry: "Marcar entrada",
-  exit: "Marcar saída",
-  overtime: "Marcar saída",
-  pause: "Marcar entrada",
-  return: "Marcar saída",
-};
-
-const currentStateCopy: Record<WorkState, string> = {
-  off: "Pronto para iniciar a jornada.",
-  working: "Seu próximo registro será a saída.",
-  overtime: "Seu próximo registro será a saída da hora extra.",
-  paused: "Seu próximo registro será a saída.",
-};
 
 function getDeviceLabel() {
   const navigatorWithUAData = navigator as Navigator & { userAgentData?: { platform?: string } };
@@ -109,9 +97,11 @@ function getStepIndex(step: PunchStep) {
 export function PunchPanel({
   currentState,
   employeeName,
-  nextEntryType,
+  greeting,
   onRegistered,
-  summaryCards,
+  primaryAction,
+  quickSummary,
+  todayEntries,
 }: PunchPanelProps) {
   const router = useRouter();
   const [isRefreshing, startRefresh] = useTransition();
@@ -152,11 +142,18 @@ export function PunchPanel({
     };
   }, [modalOpen]);
 
-  const nextActionLabel = nextActionLabels[nextEntryType];
+  const nextActionLabel = primaryAction.label;
   const canGoToSelfie = Boolean(location);
   const canConfirm = Boolean(location && selfie);
   const progress = getStepProgress(step);
   const currentStepIndex = getStepIndex(step);
+
+  const buttonToneClasses =
+    primaryAction.tone === "entry"
+      ? "bg-[linear-gradient(135deg,#00b8e6_0%,#25c8ff_100%)] text-white shadow-[0_20px_40px_rgba(0,184,230,0.25)] hover:opacity-95"
+      : primaryAction.tone === "exit"
+        ? "bg-[linear-gradient(135deg,#ff4fa3_0%,#ff6ab1_100%)] text-white shadow-[0_20px_40px_rgba(255,79,163,0.24)] hover:opacity-95"
+        : "bg-[linear-gradient(135deg,#ffcd38_0%,#ffb800_100%)] text-[#3a2d00] shadow-[0_20px_40px_rgba(255,184,0,0.22)] hover:opacity-95";
 
   const confirmationRows = useMemo(
     () => [
@@ -256,67 +253,132 @@ export function PunchPanel({
   };
 
   return (
-    <div className="space-y-5">
-      <Card className="overflow-hidden border-none bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(247,250,255,0.96))] shadow-[0_26px_70px_rgba(30,86,184,0.12)]">
-        <CardContent className="space-y-8 p-6 sm:p-7">
-          <div className="space-y-4">
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge variant="info" className="rounded-full px-3 py-1">
-                  {currentState === "off" ? "Pronto para marcar" : "Jornada em andamento"}
-                </Badge>
-                <p className="text-sm font-medium text-muted-foreground">{employeeName}</p>
-              </div>
-              <h2 className="mt-2 font-heading text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
-                {nextActionLabel}
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-muted-foreground">{currentStateCopy[currentState]}</p>
-            </div>
-
-            <div className="rounded-[32px] bg-[linear-gradient(135deg,#0f6df2_0%,#3388ff_45%,#7ab3ff_100%)] px-6 py-8 text-white shadow-[0_22px_52px_rgba(15,109,242,0.22)]">
-              <p className="text-sm uppercase tracking-[0.22em] text-white/72">Hora local</p>
-              <p className="mt-4 font-heading text-5xl font-semibold tracking-tight sm:text-6xl">
-                {new Intl.DateTimeFormat("pt-BR", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  second: "2-digit",
-                }).format(now)}
-              </p>
-              <p className="mt-3 text-sm text-white/80">
-                {new Intl.DateTimeFormat("pt-BR", {
-                  dateStyle: "full",
-                }).format(now)}
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <Button type="button" size="lg" className="h-16 flex-1 rounded-[22px] text-base" onClick={openModal}>
-              Marcar ponto
-            </Button>
-            <p className="text-sm leading-6 text-muted-foreground">
-              Um toque para começar. O app abre só o essencial: localização, selfie e confirmação.
+    <div className="space-y-6">
+      <section className="space-y-5 rounded-[34px] bg-white/72 px-5 py-6 shadow-[0_18px_40px_rgba(35,31,32,0.06)] backdrop-blur-xl sm:px-7">
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-muted-foreground">
+            {greeting}, {employeeName} 👋
+          </p>
+          <div className="space-y-2">
+            <p className="font-heading text-6xl font-semibold tracking-tight text-foreground sm:text-7xl">
+              {new Intl.DateTimeFormat("pt-BR", {
+                hour: "2-digit",
+                minute: "2-digit",
+              }).format(now)}
+            </p>
+            <p className="text-base text-muted-foreground">
+              {new Intl.DateTimeFormat("pt-BR", {
+                weekday: "long",
+                day: "2-digit",
+                month: "long",
+              }).format(now)}
             </p>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      <div className="grid gap-3 sm:grid-cols-3">
-        {summaryCards.map((item, index) => (
-          <div
-            key={item.label}
+        <div className="inline-flex items-center gap-2 rounded-full bg-white/82 px-4 py-2 text-sm font-medium text-foreground">
+          <span
             className={cn(
-              "rounded-[26px] border p-5 shadow-[0_10px_24px_rgba(35,31,32,0.04)]",
-              index === 0 && "border-[#d9e7ff] bg-[#f4f8ff]",
-              index === 1 && "border-[#ffd7ea] bg-[#fff5fa]",
-              index === 2 && "border-[#ffeab3] bg-[#fff9e8]",
+              "h-2.5 w-2.5 rounded-full",
+              currentState === "off" && "bg-[#00b8e6]",
+              currentState === "working" && "bg-[#00b8e6]",
+              currentState === "paused" && "bg-[#ff4fa3]",
+              currentState === "overtime" && "bg-[#ffcd38]",
             )}
+          />
+          {quickSummary.status}
+        </div>
+
+        <div className="space-y-3">
+          <Button
+            type="button"
+            size="lg"
+            className={cn("h-20 w-full rounded-[28px] px-6 text-lg font-bold tracking-[0.04em]", buttonToneClasses)}
+            onClick={openModal}
           >
-            <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{item.label}</p>
-            <p className="mt-2 font-heading text-2xl font-semibold text-foreground">{item.value}</p>
-          </div>
-        ))}
-      </div>
+            {primaryAction.label.toUpperCase()}
+          </Button>
+          <p className="text-sm leading-6 text-muted-foreground">{primaryAction.helper}</p>
+        </div>
+      </section>
+
+      <section className="grid gap-4 lg:grid-cols-[0.88fr_1.12fr]">
+        <Card className="overflow-hidden border-none bg-white/74 shadow-[0_16px_36px_rgba(35,31,32,0.05)]">
+          <CardContent className="space-y-5 p-5">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Hoje</p>
+              <h3 className="font-heading text-2xl font-semibold text-foreground">Resumo rápido</h3>
+            </div>
+
+            <div className="space-y-3">
+              {[
+                { label: "Entrada", value: quickSummary.firstEntry, tone: "bg-[#ecfbff] text-[#007f99]" },
+                { label: "Saída", value: quickSummary.lastExit, tone: "bg-[#fff2f8] text-[#d32c82]" },
+                { label: "Horas extras", value: quickSummary.overtime, tone: "bg-[#fff8de] text-[#9a7100]" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between rounded-[22px] bg-white/78 px-4 py-4">
+                  <span className="text-sm font-medium text-muted-foreground">{item.label}</span>
+                  <span className={cn("rounded-full px-3 py-1 text-sm font-semibold", item.tone)}>{item.value || "—"}</span>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="overflow-hidden border-none bg-white/74 shadow-[0_16px_36px_rgba(35,31,32,0.05)]">
+          <CardContent className="space-y-5 p-5">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">Hoje</p>
+              <h3 className="font-heading text-2xl font-semibold text-foreground">Sua jornada</h3>
+            </div>
+
+            {todayEntries.length === 0 ? (
+              <div className="rounded-[24px] border border-dashed border-border bg-white/70 p-6 text-sm text-muted-foreground">
+                Nenhuma marcação hoje ainda.
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {todayEntries.map((entry) => {
+                  const toneClasses =
+                    entry.type === "exit"
+                      ? "bg-[#ff4fa3]"
+                      : entry.isOvertime
+                        ? "bg-[#ffcd38]"
+                        : "bg-[#00b8e6]";
+
+                  return (
+                    <div key={entry.id} className="flex items-start gap-4">
+                      <div className="flex w-8 justify-center pt-1">
+                        <span className={cn("h-3.5 w-3.5 rounded-full", toneClasses)} />
+                      </div>
+                      <div className="min-w-0 flex-1 rounded-[22px] bg-white/78 px-4 py-4">
+                        <div className="flex items-center justify-between gap-3">
+                          <p className="font-medium text-foreground">
+                            {entry.type === "exit"
+                              ? entry.isOvertime
+                                ? "Saída extra"
+                                : "Saída"
+                              : entry.isOvertime
+                                ? "Entrada extra"
+                                : "Entrada"}
+                          </p>
+                          <p className="font-heading text-xl font-semibold text-foreground">
+                            {new Intl.DateTimeFormat("pt-BR", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            }).format(new Date(entry.timestamp))}
+                          </p>
+                        </div>
+                        <p className="mt-1 text-sm text-muted-foreground">{entry.location.label}</p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </section>
 
       <AnimatePresence>
         {modalOpen && (

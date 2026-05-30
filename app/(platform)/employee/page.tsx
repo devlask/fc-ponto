@@ -20,10 +20,10 @@ export default async function EmployeePage() {
     <EmployeeDashboard
       currentState={snapshot.currentState}
       employeeName={snapshot.employeeName}
-      initialEntries={snapshot.recentEntries.slice(-8)}
-      nextEntryType={snapshot.nextEntryType}
-      summaryCards={snapshot.summaryCards}
-      userId={snapshot.userId}
+      greeting={snapshot.greeting}
+      primaryAction={snapshot.primaryAction}
+      quickSummary={snapshot.quickSummary}
+      todayEntries={snapshot.todayEntries}
     />
   );
 }

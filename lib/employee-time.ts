@@ -29,6 +29,21 @@ export const workStateLabels: Record<WorkState, string> = {
   off: "Fora do expediente",
 };
 
+export type EmployeeActionTone = "entry" | "exit" | "overtime";
+
+export type EmployeeQuickSummary = {
+  firstEntry: string | null;
+  lastExit: string | null;
+  overtime: string;
+  status: string;
+};
+
+export type EmployeePrimaryAction = {
+  helper: string;
+  label: string;
+  tone: EmployeeActionTone;
+};
+
 export function badgeVariantForWorkState(state: WorkState) {
   if (state === "working") return "success";
   if (state === "paused") return "warning";
@@ -45,6 +60,73 @@ function getBusinessDateInTimeZone(timeZone: string) {
   });
 
   return formatter.format(new Date());
+}
+
+function getLocalMinutes(date: Date, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).formatToParts(date);
+
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? "0");
+  return hour * 60 + minute;
+}
+
+function getWeekDayIndex(date: Date, timeZone: string) {
+  const shortWeekday = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    weekday: "short",
+  }).format(date);
+  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  return weekdays.indexOf(shortWeekday);
+}
+
+function timeToMinutes(value: string) {
+  const [hours, minutes] = value.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function isAfterConfiguredHours(
+  now: Date,
+  timeZone: string,
+  dailyRules: Record<string, { enabled?: boolean; start?: string; end?: string }> | undefined,
+) {
+  const dayIndex = getWeekDayIndex(now, timeZone);
+  const rule = dailyRules?.[String(dayIndex)];
+
+  if (!rule?.enabled || !rule.end) {
+    return true;
+  }
+
+  return getLocalMinutes(now, timeZone) > timeToMinutes(rule.end);
+}
+
+function getGreeting(timeZone: string) {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-GB", {
+      timeZone,
+      hour: "2-digit",
+      hour12: false,
+    }).format(new Date()),
+  );
+
+  if (hour < 12) return "Bom dia";
+  if (hour < 18) return "Boa tarde";
+  return "Boa noite";
+}
+
+function formatSimpleTime(timestamp: string | null) {
+  if (!timestamp) {
+    return "—";
+  }
+
+  return new Intl.DateTimeFormat("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(timestamp));
 }
 
 function getLocationLabel(status: string | null | undefined) {
@@ -88,6 +170,9 @@ export type EmployeeTimeSnapshot = {
   businessDate: string;
   currentState: WorkState;
   employeeName: string;
+  greeting: string;
+  primaryAction: EmployeePrimaryAction;
+  quickSummary: EmployeeQuickSummary;
   nextEntryType: TimeEntry["type"];
   recentEntries: TimeEntry[];
   role: string;
@@ -116,7 +201,7 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
     supabase.from("users").select("full_name, role").eq("id", user.id).maybeSingle(),
     supabase
       .from("work_schedule_settings")
-      .select("timezone")
+      .select("timezone, daily_rules")
       .eq("is_active", true)
       .order("updated_at", { ascending: false })
       .maybeSingle(),
@@ -129,6 +214,10 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
     "Usuário";
   const role = (profile?.role as string | undefined) || "employee";
   const timeZone = (schedule?.timezone as string | undefined) || "America/Sao_Paulo";
+  const dailyRules =
+    schedule?.daily_rules && typeof schedule.daily_rules === "object"
+      ? (schedule.daily_rules as Record<string, { enabled?: boolean; start?: string; end?: string }>)
+      : undefined;
   const businessDate = getBusinessDateInTimeZone(timeZone);
 
   const [todayResult, recentResult] = await Promise.all([
@@ -159,11 +248,47 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
   const summary = calculateWorkedMinutes(todayEntries);
   const currentState = getCurrentWorkState(todayEntries.at(-1) ?? recentEntries.at(-1) ?? null);
   const nextEntryType = inferNextEntryType((todayEntries.at(-1) ?? recentEntries.at(-1) ?? null)?.type ?? null);
+  const afterHours = isAfterConfiguredHours(new Date(), timeZone, dailyRules);
+  const firstEntry = todayEntries.find((entry) => entry.type === "entry" || entry.type === "overtime") ?? null;
+  const lastExit = [...todayEntries].reverse().find((entry) => entry.type === "exit") ?? null;
+
+  const primaryAction: EmployeePrimaryAction =
+    currentState === "overtime"
+      ? {
+          helper: "Saída de uma jornada extra em andamento.",
+          label: "Marcar saída",
+          tone: "overtime",
+        }
+      : nextEntryType === "exit"
+        ? {
+            helper: "Sua jornada já está aberta. Agora o próximo toque fecha o ciclo.",
+            label: "Marcar saída",
+            tone: "exit",
+          }
+        : afterHours
+          ? {
+              helper: "O horário configurado já terminou. O próximo registro será tratado como hora extra.",
+              label: "Registrar hora extra",
+              tone: "overtime",
+            }
+          : {
+              helper: "Um toque para abrir a jornada com GPS, selfie e confirmação rápida.",
+              label: "Marcar entrada",
+              tone: "entry",
+            };
 
   return {
     businessDate,
     currentState,
     employeeName,
+    greeting: getGreeting(timeZone),
+    primaryAction,
+    quickSummary: {
+      firstEntry: formatSimpleTime(firstEntry?.timestamp ?? null),
+      lastExit: formatSimpleTime(lastExit?.timestamp ?? null),
+      overtime: formatMinutes(summary.overtimeMinutes),
+      status: workStateLabels[currentState],
+    },
     nextEntryType,
     recentEntries,
     role,
