@@ -38,6 +38,8 @@ export type AdminEditRequest = {
 export type AdminAuditLog = {
   action: string;
   actorName: string;
+  afterData: Record<string, unknown> | null;
+  beforeData: Record<string, unknown> | null;
   createdAt: string;
   id: string;
   targetId: string | null;
@@ -347,7 +349,11 @@ export async function getAdminSnapshot() {
       .select("id, user_id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime")
       .order("recorded_at", { ascending: false })
       .limit(120),
-    supabase.from("audit_logs").select("id, action, target_table, target_id, actor_user_id, created_at").order("created_at", { ascending: false }).limit(30),
+    supabase
+      .from("audit_logs")
+      .select("id, action, target_table, target_id, actor_user_id, created_at, before_data, after_data")
+      .order("created_at", { ascending: false })
+      .limit(60),
   ]);
 
   const users = (usersResult.data ?? []) as SupabaseRow[];
@@ -397,6 +403,8 @@ export async function getAdminSnapshot() {
     return {
       action: String(row.action),
       actorName: actor?.fullName ?? "Sistema",
+      afterData: row.after_data && typeof row.after_data === "object" ? (row.after_data as Record<string, unknown>) : null,
+      beforeData: row.before_data && typeof row.before_data === "object" ? (row.before_data as Record<string, unknown>) : null,
       createdAt: String(row.created_at),
       id: String(row.id),
       targetId: row.target_id ? String(row.target_id) : null,

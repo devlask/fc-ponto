@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveUserRole } from "@/lib/admin-data";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { recordAdminAudit } from "@/lib/admin-audit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function PATCH(
@@ -8,9 +8,8 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> },
 ) {
   const supabase = await createSupabaseServerClient();
-  const adminClient = createSupabaseAdminClient();
 
-  if (!supabase || !adminClient) {
+  if (!supabase) {
     return NextResponse.json({ error: "Configuração administrativa indisponível." }, { status: 500 });
   }
 
@@ -35,7 +34,13 @@ export async function PATCH(
   }
 
   const { id } = await context.params;
-  const { error } = await adminClient
+  const { data: targetUser } = await supabase
+    .from("users")
+    .select("id, full_name, email")
+    .eq("id", id)
+    .maybeSingle();
+
+  const { error } = await supabase
     .from("users")
     .update({
       full_name: fullName,
@@ -46,6 +51,21 @@ export async function PATCH(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await recordAdminAudit({
+    action: "admin_editou_usuario",
+    actorUserId: user.id,
+    afterData: {
+      email: targetUser?.email ?? null,
+      full_name: fullName,
+    },
+    beforeData: {
+      email: targetUser?.email ?? null,
+      full_name: targetUser?.full_name ?? null,
+    },
+    targetId: id,
+    targetTable: "users",
+  });
 
   return NextResponse.json({ ok: true });
 }

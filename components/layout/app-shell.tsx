@@ -45,7 +45,7 @@ export function AppShell({ children, userRole }: AppShellProps) {
       >
         <div className="flex items-center justify-between gap-2 rounded-[24px] bg-white/76 px-3 py-2 shadow-[0_18px_40px_rgba(31,41,55,0.07)] backdrop-blur-xl dark:bg-card/88 sm:px-4 sm:py-3">
           <div className="min-w-0 flex-1">
-            <CompanyLogo compact href={isAdmin ? "/admin" : "/employee"} className="min-w-0" />
+            <CompanyLogo compact href="/employee" className="min-w-0" />
           </div>
 
           <div className="relative z-[130] flex shrink-0 items-center gap-2">

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveUserRole } from "@/lib/admin-data";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
+import { recordAdminAudit } from "@/lib/admin-audit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(
@@ -8,9 +8,8 @@ export async function POST(
   context: { params: Promise<{ id: string }> },
 ) {
   const supabase = await createSupabaseServerClient();
-  const adminClient = createSupabaseAdminClient();
 
-  if (!supabase || !adminClient) {
+  if (!supabase) {
     return NextResponse.json({ error: "Configuração administrativa indisponível." }, { status: 500 });
   }
 
@@ -51,17 +50,19 @@ export async function POST(
     return NextResponse.json({ error: "Coordenadas inválidas." }, { status: 400 });
   }
 
-  const { data: schedule } = await adminClient
+  const { data: schedule } = await supabase
     .from("work_schedule_settings")
     .select("id")
     .eq("is_active", true)
     .order("updated_at", { ascending: false })
     .maybeSingle();
 
-  const { error } = await adminClient.from("time_entries").insert({
-    user_id: id,
-    schedule_setting_id: schedule?.id ?? null,
-    event_type: body.eventType,
+  const { data: insertedEntry, error } = await supabase
+    .from("time_entries")
+    .insert({
+      user_id: id,
+      schedule_setting_id: schedule?.id ?? null,
+      event_type: body.eventType,
     recorded_at: new Date(body.recordedAt).toISOString(),
     latitude,
     longitude,
@@ -76,14 +77,29 @@ export async function POST(
     is_manual: true,
     metadata: {
       reason: body.reason,
-      adjustedBy: user.id,
-      note: body.note?.trim() || null,
-    },
-  });
+        adjustedBy: user.id,
+        note: body.note?.trim() || null,
+      },
+    })
+    .select("id")
+    .single();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await recordAdminAudit({
+    action: "admin_lancou_ajuste_manual",
+    actorUserId: user.id,
+    afterData: {
+      event_type: body.eventType,
+      note: body.note?.trim() || null,
+      reason: body.reason,
+      recorded_at: new Date(body.recordedAt).toISOString(),
+    },
+    targetId: insertedEntry?.id ?? null,
+    targetTable: "time_entries",
+  });
 
   return NextResponse.json({ ok: true });
 }

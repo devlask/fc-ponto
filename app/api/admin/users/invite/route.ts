@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveUserRole } from "@/lib/admin-data";
+import { recordAdminAudit } from "@/lib/admin-audit";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -38,7 +39,7 @@ export async function POST(request: Request) {
   const origin = request.headers.get("origin") || process.env.NEXT_PUBLIC_SUPABASE_URL || undefined;
   const redirectTo = origin ? `${origin}/auth/login` : undefined;
 
-  const { error } = await adminClient.auth.admin.inviteUserByEmail(body.email, {
+  const { data, error } = await adminClient.auth.admin.inviteUserByEmail(body.email, {
     data: {
       full_name: body.fullName,
       role: body.role,
@@ -49,6 +50,18 @@ export async function POST(request: Request) {
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await recordAdminAudit({
+    action: "admin_convidou_usuario",
+    actorUserId: user.id,
+    afterData: {
+      email: body.email,
+      full_name: body.fullName,
+      role: body.role,
+    },
+    targetId: data.user?.id ?? null,
+    targetTable: "users",
+  });
 
   return NextResponse.json({ ok: true });
 }

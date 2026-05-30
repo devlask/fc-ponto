@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { resolveUserRole } from "@/lib/admin-data";
+import { recordAdminAudit } from "@/lib/admin-audit";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function PATCH(
@@ -33,6 +34,12 @@ export async function PATCH(
     return NextResponse.json({ error: "Status inválido." }, { status: 400 });
   }
 
+  const { data: requestRow } = await supabase
+    .from("edit_requests")
+    .select("id, requested_event_type, requested_date, requested_timestamp, status")
+    .eq("id", id)
+    .maybeSingle();
+
   const { error } = await supabase
     .from("edit_requests")
     .update({
@@ -45,6 +52,22 @@ export async function PATCH(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
+
+  await recordAdminAudit({
+    action: body.status === "approved" ? "admin_aprovou_solicitacao" : "admin_recusou_solicitacao",
+    actorUserId: user.id,
+    afterData: {
+      requested_date: requestRow?.requested_date ?? null,
+      requested_event_type: requestRow?.requested_event_type ?? null,
+      requested_timestamp: requestRow?.requested_timestamp ?? null,
+      status: body.status,
+    },
+    beforeData: {
+      status: requestRow?.status ?? null,
+    },
+    targetId: id,
+    targetTable: "edit_requests",
+  });
 
   return NextResponse.json({ ok: true });
 }
