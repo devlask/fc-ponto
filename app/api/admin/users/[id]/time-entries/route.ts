@@ -29,6 +29,9 @@ export async function POST(
 
   const body = (await request.json().catch(() => null)) as {
     eventType?: "entry" | "exit";
+    latitude?: string;
+    longitude?: string;
+    note?: string;
     reason?: string;
     recordedAt?: string;
   } | null;
@@ -38,6 +41,16 @@ export async function POST(
   }
 
   const { id } = await context.params;
+  const latitude = body.latitude ? Number(body.latitude) : 0;
+  const longitude = body.longitude ? Number(body.longitude) : 0;
+
+  if (
+    (body.latitude && !Number.isFinite(latitude)) ||
+    (body.longitude && !Number.isFinite(longitude))
+  ) {
+    return NextResponse.json({ error: "Coordenadas inválidas." }, { status: 400 });
+  }
+
   const { data: schedule } = await adminClient
     .from("work_schedule_settings")
     .select("id")
@@ -50,10 +63,10 @@ export async function POST(
     schedule_setting_id: schedule?.id ?? null,
     event_type: body.eventType,
     recorded_at: new Date(body.recordedAt).toISOString(),
-    latitude: 0,
-    longitude: 0,
+    latitude,
+    longitude,
     accuracy_meters: 0,
-    geofence_status: "unknown",
+    geofence_status: body.latitude && body.longitude ? "inside" : "unknown",
     selfie_path: "admin/manual-adjustment",
     selfie_hash: null,
     ip_address: null,
@@ -64,6 +77,7 @@ export async function POST(
     metadata: {
       reason: body.reason,
       adjustedBy: user.id,
+      note: body.note?.trim() || null,
     },
   });
 

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,12 +24,19 @@ type ActiveWorkersListProps = {
 export function ActiveWorkersList({ workers }: ActiveWorkersListProps) {
   return (
     <Card className="ink-chip border-border">
-      <CardHeader>
+      <CardHeader className="space-y-2">
         <CardTitle className="text-foreground">Funcionarios ativos</CardTitle>
+        <p className="text-sm leading-6 text-muted-foreground">
+          Acompanhe quem está em campo agora e abra a ficha individual quando precisar agir.
+        </p>
       </CardHeader>
       <CardContent className="space-y-3">
         {workers.map((worker) => (
-          <div key={worker.id} className="rounded-[24px] border border-border bg-white/58 p-4 dark:bg-white/6">
+          <Link
+            key={worker.id}
+            href={`/admin/team/${worker.id}`}
+            className="block rounded-[26px] border border-border bg-white/62 p-5 transition-transform hover:-translate-y-0.5 dark:bg-white/6"
+          >
             <div className="flex items-center justify-between gap-3">
               <div>
                 <p className="font-medium text-foreground">{worker.name}</p>
@@ -41,7 +49,7 @@ export function ActiveWorkersList({ workers }: ActiveWorkersListProps) {
               <MapPin className="h-3.5 w-3.5 text-primary" />
               {worker.location.label}
             </p>
-          </div>
+          </Link>
         ))}
       </CardContent>
     </Card>

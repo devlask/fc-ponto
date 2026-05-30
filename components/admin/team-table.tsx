@@ -70,8 +70,11 @@ export function TeamTable({ members: initialMembers }: TeamTableProps) {
 
   return (
     <Card className="ink-chip border-border">
-      <CardHeader>
+      <CardHeader className="space-y-2">
         <CardTitle className="text-foreground">Gestão de funcionários</CardTitle>
+        <p className="text-sm leading-6 text-muted-foreground">
+          Cards leves para acessar a ficha, ajustar o nome e seguir o ritmo da operação sem cara de sistema pesado.
+        </p>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">

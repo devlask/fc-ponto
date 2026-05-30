@@ -257,7 +257,7 @@ export function PunchPanel({
 
   return (
     <div className="space-y-5">
-      <Card className="overflow-hidden border-none bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(244,248,255,0.94))] shadow-[0_26px_70px_rgba(30,86,184,0.14)]">
+      <Card className="overflow-hidden border-none bg-[linear-gradient(180deg,rgba(255,255,255,0.95),rgba(247,250,255,0.96))] shadow-[0_26px_70px_rgba(30,86,184,0.12)]">
         <CardContent className="space-y-8 p-6 sm:p-7">
           <div className="space-y-4">
             <div>
@@ -273,7 +273,7 @@ export function PunchPanel({
               <p className="mt-2 text-sm leading-6 text-muted-foreground">{currentStateCopy[currentState]}</p>
             </div>
 
-            <div className="rounded-[30px] bg-[linear-gradient(135deg,#0f6df2_0%,#3388ff_45%,#7ab3ff_100%)] px-6 py-7 text-white shadow-[0_24px_60px_rgba(15,109,242,0.28)]">
+            <div className="rounded-[32px] bg-[linear-gradient(135deg,#0f6df2_0%,#3388ff_45%,#7ab3ff_100%)] px-6 py-8 text-white shadow-[0_22px_52px_rgba(15,109,242,0.22)]">
               <p className="text-sm uppercase tracking-[0.22em] text-white/72">Hora local</p>
               <p className="mt-4 font-heading text-5xl font-semibold tracking-tight sm:text-6xl">
                 {new Intl.DateTimeFormat("pt-BR", {
@@ -290,13 +290,13 @@ export function PunchPanel({
             </div>
           </div>
 
-          <div className="flex flex-col gap-3 sm:flex-row">
+          <div className="space-y-3">
             <Button type="button" size="lg" className="h-16 flex-1 rounded-[22px] text-base" onClick={openModal}>
               Marcar ponto
             </Button>
-            <div className="rounded-[22px] border border-border bg-card/70 px-4 py-4 text-sm text-muted-foreground sm:max-w-[220px]">
-              GPS e selfie serão validados em etapas separadas dentro do modal de marcação.
-            </div>
+            <p className="text-sm leading-6 text-muted-foreground">
+              Um toque para começar. O app abre só o essencial: localização, selfie e confirmação.
+            </p>
           </div>
         </CardContent>
       </Card>
@@ -306,10 +306,10 @@ export function PunchPanel({
           <div
             key={item.label}
             className={cn(
-              "rounded-[24px] border p-4",
-              index === 0 && "border-[#d9e7ff] bg-[#eef5ff]",
-              index === 1 && "border-[#ffd7ea] bg-[#fff1f8]",
-              index === 2 && "border-[#ffeab3] bg-[#fff7dd]",
+              "rounded-[26px] border p-5 shadow-[0_10px_24px_rgba(35,31,32,0.04)]",
+              index === 0 && "border-[#d9e7ff] bg-[#f4f8ff]",
+              index === 1 && "border-[#ffd7ea] bg-[#fff5fa]",
+              index === 2 && "border-[#ffeab3] bg-[#fff9e8]",
             )}
           >
             <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">{item.label}</p>

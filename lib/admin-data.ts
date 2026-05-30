@@ -52,6 +52,7 @@ export type AdminEmployeeDetail = {
   id: string;
   email: string;
   fullName: string;
+  periodDays: number | null;
   role: UserRole;
   summaryCards: Array<{ label: string; value: string }>;
 };
@@ -424,7 +425,7 @@ export async function getAdminApprovalsData() {
   };
 }
 
-export async function getAdminEmployeeDetail(userId: string): Promise<AdminEmployeeDetail | null> {
+export async function getAdminEmployeeDetail(userId: string, periodDays: number | null = 30): Promise<AdminEmployeeDetail | null> {
   await requireAdminSession();
   const supabase = await createSupabaseServerClient();
 
@@ -457,30 +458,33 @@ export async function getAdminEmployeeDetail(userId: string): Promise<AdminEmplo
   const entries = [...(entriesResult ?? [])]
     .reverse()
     .map((row) => mapTimeEntry(row, String(userProfile.full_name), String(userProfile.role) as UserRole, userId));
-
-  const last30Days = entries.filter(
-    (entry) => new Date(entry.timestamp).getTime() >= Date.now() - 30 * 24 * 60 * 60 * 1000,
-  );
-  const summary = calculateWorkedMinutes(last30Days);
+  const filteredEntries =
+    periodDays === null
+      ? entries
+      : entries.filter(
+          (entry) => new Date(entry.timestamp).getTime() >= Date.now() - periodDays * 24 * 60 * 60 * 1000,
+        );
+  const summary = calculateWorkedMinutes(filteredEntries);
   const timeZone = typeof schedule?.timezone === "string" ? schedule.timezone : "America/Sao_Paulo";
   const toleranceMinutes = typeof schedule?.tolerance_minutes === "number" ? schedule.tolerance_minutes : 10;
   const dailyRules =
     schedule?.daily_rules && typeof schedule.daily_rules === "object"
       ? (schedule.daily_rules as Record<string, { enabled?: boolean; start?: string }>)
       : {};
-  const lateMetrics = calculateLateMetrics(last30Days, dailyRules, toleranceMinutes, timeZone);
+  const lateMetrics = calculateLateMetrics(filteredEntries, dailyRules, toleranceMinutes, timeZone);
 
   return {
     email: String(userProfile.email),
-    entries,
+    entries: filteredEntries,
     fullName: String(userProfile.full_name),
     id: String(userProfile.id),
+    periodDays,
     role: String(userProfile.role) as UserRole,
     summaryCards: [
       { label: "Horas trabalhadas", value: formatMinutes(summary.totalMinutes) },
       { label: "Horas extras", value: formatMinutes(summary.overtimeMinutes) },
       { label: "Atrasos", value: `${lateMetrics.lateDays} dia(s) • ${lateMetrics.lateMinutes} min` },
-      { label: "Registros", value: String(entries.length) },
+      { label: "Registros", value: String(filteredEntries.length) },
     ],
   };
 }
