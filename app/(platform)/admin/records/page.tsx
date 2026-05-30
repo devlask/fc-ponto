@@ -1,9 +1,9 @@
-import { TimeEntryList } from "@/components/admin/time-entry-list";
+import { RecordsBrowser } from "@/components/admin/records-browser";
 import { Card, CardContent } from "@/components/ui/card";
-import { getAdminSnapshot } from "@/lib/admin-data";
+import { getAdminRecordsData } from "@/lib/admin-data";
 
 export default async function AdminRecordsPage() {
-  const snapshot = await getAdminSnapshot();
+  const snapshot = await getAdminRecordsData();
 
   if (!snapshot) {
     return null;
@@ -21,7 +21,7 @@ export default async function AdminRecordsPage() {
         </CardContent>
       </Card>
 
-      <TimeEntryList entries={snapshot.history} />
+      <RecordsBrowser entries={snapshot.entries} />
     </div>
   );
 }

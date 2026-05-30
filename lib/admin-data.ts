@@ -767,3 +767,48 @@ export async function getAdminEmployeeDetail(userId: string, periodDays: number 
     ],
   };
 }
+
+export async function getAdminRecordsData() {
+  await requireAdminSession();
+  const supabase = await createSupabaseServerClient();
+
+  if (!supabase) {
+    return { entries: [] as AdminTimeEntryRow[] };
+  }
+
+  const [usersResult, timeEntriesResult] = await Promise.all([
+    supabase.from("users").select("id, full_name, role"),
+    supabase
+      .from("time_entries")
+      .select(
+        "id, user_id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path",
+      )
+      .order("recorded_at", { ascending: false })
+      .limit(400),
+  ]);
+
+  const userMap = new Map(
+    ((usersResult.data ?? []) as SupabaseRow[]).map((user) => [
+      String(user.id),
+      {
+        fullName: String(user.full_name),
+        role: String(user.role) as UserRole,
+      },
+    ]),
+  );
+
+  const entries = await attachSelfieUrls(
+    ((timeEntriesResult.data ?? []) as SupabaseRow[]).map((row) => {
+      const userProfile = userMap.get(String(row.user_id));
+
+      return mapTimeEntry(
+        row,
+        userProfile?.fullName ?? "Usuário",
+        userProfile?.role ?? "employee",
+        String(row.user_id),
+      );
+    }),
+  );
+
+  return { entries };
+}
