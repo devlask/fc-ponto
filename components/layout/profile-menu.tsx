@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { BadgePlus, ClipboardClock, Download, LayoutDashboard, Logs, Settings2, UserCircle2, Users2 } from "lucide-react";
+import { BadgePlus, BarChart3, ClipboardClock, Download, LayoutDashboard, Rows3, Settings2, ShieldCheck, UserCircle2, Users2 } from "lucide-react";
 import type { UserRole } from "@/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -17,8 +17,10 @@ const adminLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
   { href: "/admin/team", label: "Equipe", icon: Users2 },
   { href: "/admin/approvals", label: "Aprovações", icon: ClipboardClock },
-  { href: "/admin/logs", label: "Logs", icon: Logs },
-  { href: "/admin/settings", label: "Jornada", icon: Settings2 },
+  { href: "/admin/records", label: "Registros", icon: Rows3 },
+  { href: "/admin/reports", label: "Relatórios", icon: BarChart3 },
+  { href: "/admin/settings/audit", label: "Auditoria", icon: ShieldCheck },
+  { href: "/admin/settings", label: "Configurações", icon: Settings2 },
 ];
 
 export function ProfileMenu({ installAvailable = false, onInstall, role }: ProfileMenuProps) {

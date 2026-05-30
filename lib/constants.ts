@@ -10,9 +10,10 @@ export const employeeNavItems = [
 
 export const adminNavItems = [
   { href: "/admin", label: "Dashboard" },
-  { href: "/admin/approvals", label: "Aprovacoes" },
   { href: "/admin/team", label: "Equipe" },
-  { href: "/admin/settings", label: "Jornada" },
+  { href: "/admin/approvals", label: "Solicitacoes" },
+  { href: "/admin/reports", label: "Relatorios" },
+  { href: "/admin/settings", label: "Config" },
 ];
 
 export const defaultSchedule: WorkScheduleSettings = {

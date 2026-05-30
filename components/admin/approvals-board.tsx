@@ -17,6 +17,16 @@ function badgeVariant(status: AdminEditRequest["status"]) {
   return "warning";
 }
 
+function statusLabel(status: AdminEditRequest["status"]) {
+  if (status === "approved") return "Aprovado";
+  if (status === "rejected") return "Recusado";
+  return "Em análise";
+}
+
+function eventLabel(type: AdminEditRequest["requestedEventType"]) {
+  return type === "exit" ? "Saída" : "Entrada";
+}
+
 export function ApprovalsBoard({ requests: initialRequests }: ApprovalsBoardProps) {
   const [requests, setRequests] = useState(initialRequests);
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -68,10 +78,10 @@ export function ApprovalsBoard({ requests: initialRequests }: ApprovalsBoardProp
               <div>
                 <p className="font-medium text-foreground">{request.requesterName}</p>
                 <p className="text-sm text-muted-foreground">
-                  {request.requestedDate} • {request.requestedTime} • {request.requestedEventType}
+                  {request.requestedDate} • {request.requestedTime} • {eventLabel(request.requestedEventType)}
                 </p>
               </div>
-              <Badge variant={badgeVariant(request.status)}>{request.status}</Badge>
+              <Badge variant={badgeVariant(request.status)}>{statusLabel(request.status)}</Badge>
             </div>
             <p className="mt-3 text-sm leading-6 text-muted-foreground">{request.reason}</p>
             <p className="mt-2 text-xs text-muted-foreground">{request.requesterEmail}</p>

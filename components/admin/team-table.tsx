@@ -23,6 +23,13 @@ function labelForRole(role: AdminTeamMember["role"]) {
   return "Funcionário";
 }
 
+function labelForStatus(status: AdminTeamMember["status"]) {
+  if (status === "working") return "Trabalhando";
+  if (status === "paused") return "Em pausa";
+  if (status === "overtime") return "Hora extra";
+  return "Fora";
+}
+
 type TeamTableProps = {
   members: AdminTeamMember[];
 };
@@ -84,7 +91,7 @@ export function TeamTable({ members: initialMembers }: TeamTableProps) {
             return (
               <div
                 key={member.id}
-                className="grid gap-3 rounded-[24px] border border-border bg-white/58 p-4 md:grid-cols-[1.35fr_0.9fr_0.9fr_auto] dark:bg-white/6"
+                className="grid gap-4 rounded-[24px] border border-border bg-white/58 p-4 md:grid-cols-[1.15fr_0.9fr_1fr_auto] dark:bg-white/6"
               >
                 <div className="space-y-2">
                   {isEditing ? (
@@ -93,10 +100,11 @@ export function TeamTable({ members: initialMembers }: TeamTableProps) {
                     <p className="font-medium text-foreground">{member.fullName}</p>
                   )}
                   <p className="text-sm text-muted-foreground">{member.email}</p>
+                  <p className="text-sm font-medium text-foreground">{member.lastEvent}</p>
                 </div>
                 <div className="space-y-2">
                   <p className="text-sm text-muted-foreground">{labelForRole(member.role)}</p>
-                  <Badge variant={badgeVariant(member.status)}>{member.status}</Badge>
+                  <Badge variant={badgeVariant(member.status)}>{labelForStatus(member.status)}</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
                   {new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" }).format(new Date(member.createdAt))}

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { CalendarRange, ClipboardPenLine, Clock3, Home, LayoutDashboard, Settings2, UserCircle2, Users2 } from "lucide-react";
+import { BarChart3, CalendarRange, ClipboardPenLine, Clock3, Home, LayoutDashboard, Settings2, UserCircle2, Users2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { adminNavItems, employeeNavItems } from "@/lib/constants";
@@ -23,8 +23,9 @@ export function AppShell({ children, userRole }: AppShellProps) {
   const iconMap = isAdmin
     ? {
         "/admin": LayoutDashboard,
-        "/admin/approvals": ClipboardPenLine,
         "/admin/team": Users2,
+        "/admin/approvals": ClipboardPenLine,
+        "/admin/reports": BarChart3,
         "/admin/settings": Settings2,
       }
     : {
@@ -67,7 +68,7 @@ export function AppShell({ children, userRole }: AppShellProps) {
       >
         <div className="glass-panel flex items-center justify-between rounded-[30px] border border-border/90 px-3 py-3 backdrop-blur-xl shadow-[0_18px_50px_rgba(35,31,32,0.08)]">
           {navItems.map((item) => {
-            const active = pathname === item.href;
+            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
             const Icon = iconMap[item.href as keyof typeof iconMap];
 
             return (

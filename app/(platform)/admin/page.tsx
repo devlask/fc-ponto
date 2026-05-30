@@ -1,14 +1,20 @@
+import Link from "next/link";
+import { ChevronRight } from "lucide-react";
 import { ActiveWorkersList } from "@/components/admin/active-workers-list";
-import { AuditLogList } from "@/components/admin/audit-log-list";
-import { MapCard } from "@/components/admin/map-card";
-import { ReportExportCard } from "@/components/admin/report-export-card";
-import { TimeEntryList } from "@/components/admin/time-entry-list";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardTitle } from "@/components/ui/card";
-import { getAdminSnapshot } from "@/lib/admin-data";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { getAdminDashboardData } from "@/lib/admin-data";
+
+const toneClasses = {
+  blue: "bg-[#eef6ff]",
+  cyan: "bg-[#ecfbff]",
+  magenta: "bg-[#fff2f8]",
+  yellow: "bg-[#fff8de]",
+} as const;
 
 export default async function AdminPage() {
-  const snapshot = await getAdminSnapshot();
+  const snapshot = await getAdminDashboardData();
 
   if (!snapshot) {
     return null;
@@ -16,64 +22,125 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-6">
-      <Card className="overflow-hidden border-none bg-[linear-gradient(140deg,rgba(255,255,255,0.96),rgba(240,248,255,0.98))] shadow-[0_26px_72px_rgba(27,57,106,0.10)]">
-        <CardContent className="grid gap-8 p-6 xl:grid-cols-[1.1fr_0.9fr] xl:items-start">
-          <div className="space-y-4">
-            <Badge variant="info">Central administrativa</Badge>
-            <CardTitle className="text-3xl text-foreground sm:text-4xl">
-              Operação, equipe e auditoria em tempo real.
-            </CardTitle>
-            <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">
-              Acompanhe funcionários ativos, registros recentes, solicitações de ajuste e exportações com uma leitura
-              mais executiva e menos fragmentada.
-            </p>
-            <div className="grid gap-3 sm:grid-cols-3">
-              {[
-                "Equipe e nomes atualizáveis direto no painel.",
-                "Histórico geral com nome do funcionário e contexto do registro.",
-                "Relatórios reais prontos para PDF e Excel.",
-              ].map((item) => (
+      <section className="space-y-4 rounded-[32px] bg-white/76 p-6 shadow-[0_18px_42px_rgba(35,31,32,0.06)]">
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-muted-foreground">{snapshot.generatedAt}</p>
+          <h1 className="font-heading text-3xl font-semibold text-foreground sm:text-4xl">
+            {snapshot.greeting}, gerente 👋
+          </h1>
+          <p className="text-sm leading-6 text-muted-foreground">
+            Veja rápido quem está trabalhando, atrasado, em hora extra e o que precisa de aprovação agora.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {snapshot.cards.map((card) => (
+            <Card key={card.label} className={`border-none ${toneClasses[card.tone]} shadow-none`}>
+              <CardContent className="p-4">
+                <p className="text-sm text-muted-foreground">{card.label}</p>
+                <p className="mt-2 font-heading text-3xl font-semibold text-foreground">{card.value}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+        <Card className="border-none bg-white/76 shadow-[0_16px_36px_rgba(35,31,32,0.05)]">
+          <CardContent className="space-y-4 p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Solicitações pendentes</p>
+                <h2 className="mt-1 font-heading text-2xl font-semibold text-foreground">O que precisa de ação</h2>
+              </div>
+              <Button variant="ghost" className="rounded-full" asChild>
+                <Link href="/admin/approvals">
+                  Ver todas
+                  <ChevronRight className="h-4 w-4" />
+                </Link>
+              </Button>
+            </div>
+
+            {snapshot.pendingRequests.length === 0 ? (
+              <div className="rounded-[24px] border border-dashed border-border bg-white/70 p-5 text-sm text-muted-foreground">
+                Nenhuma solicitação aguardando aprovação.
+              </div>
+            ) : (
+              snapshot.pendingRequests.map((request) => (
+                <div key={request.id} className="rounded-[24px] border border-border bg-white/78 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="font-medium text-foreground">{request.requesterName}</p>
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {request.requestedEventType === "exit" ? "Saída" : "Entrada"} • {request.requestedDate}
+                      </p>
+                    </div>
+                    <Badge variant="warning">Pendente</Badge>
+                  </div>
+                  <p className="mt-3 text-base font-medium text-foreground">{request.requestedTime}</p>
+                  <p className="mt-2 text-sm leading-6 text-muted-foreground">{request.reason}</p>
+                  <div className="mt-4 flex gap-2">
+                    <Button size="sm" className="rounded-xl" asChild>
+                      <Link href="/admin/approvals">Aprovar</Link>
+                    </Button>
+                    <Button size="sm" variant="outline" className="rounded-xl" asChild>
+                      <Link href="/admin/approvals">Recusar</Link>
+                    </Button>
+                  </div>
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="border-none bg-white/76 shadow-[0_16px_36px_rgba(35,31,32,0.05)]">
+          <CardContent className="space-y-4 p-5">
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Resumo do dia</p>
+                <h2 className="mt-1 font-heading text-2xl font-semibold text-foreground">Leitura operacional</h2>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {snapshot.quickSummary.map((item, index) => (
                 <div
-                  key={item}
-                  className="rounded-[22px] border border-border bg-white/68 p-4 text-sm leading-6 text-muted-foreground dark:bg-white/6"
+                  key={item.label}
+                  className={`rounded-[22px] p-4 ${
+                    index === 0 ? "bg-[#eef8ff]" : index === 1 ? "bg-[#fff8de]" : "bg-[#fff2f8]"
+                  }`}
                 >
-                  {item}
+                  <p className="text-sm text-muted-foreground">{item.label}</p>
+                  <p className="mt-2 text-lg font-semibold text-foreground">{item.value}</p>
                 </div>
               ))}
             </div>
-          </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
-            {snapshot.cards.map((card, index) => (
-              <div
-                key={card.label}
-                className={
-                  index % 3 === 0
-                    ? "rounded-[24px] border border-primary/15 bg-primary/8 p-4"
-                    : index % 3 === 1
-                      ? "rounded-[24px] border border-secondary/15 bg-secondary/8 p-4"
-                      : "rounded-[24px] border border-accent/20 bg-accent/15 p-4"
-                }
-              >
-                <p className="text-sm text-muted-foreground">{card.label}</p>
-                <p className="mt-2 font-heading text-3xl font-semibold text-foreground">{card.value}</p>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
-        <ActiveWorkersList workers={snapshot.activeWorkers} />
-        <MapCard point={snapshot.activeWorkers[0]?.location ?? { accuracy: 0, label: "Sem dados", lat: 0, lng: 0 }} />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button variant="secondary" className="h-12 rounded-[20px]" asChild>
+                <Link href="/admin/records">Ver registros</Link>
+              </Button>
+              <Button variant="secondary" className="h-12 rounded-[20px]" asChild>
+                <Link href="/admin/reports">Abrir relatórios</Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <TimeEntryList entries={snapshot.history} />
-        <AuditLogList logs={snapshot.auditLogs} />
+      <div className="space-y-3">
+        <ActiveWorkersList workers={snapshot.activeWorkers.slice(0, 5)} />
+        {snapshot.activeWorkers.length > 5 ? (
+          <div className="flex justify-end">
+            <Button variant="ghost" className="rounded-full" asChild>
+              <Link href="/admin/team">
+                Ver equipe completa
+                <ChevronRight className="h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        ) : null}
       </div>
-
-      <ReportExportCard entries={snapshot.history} />
     </div>
   );
 }
