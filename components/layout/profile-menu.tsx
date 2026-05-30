@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { BadgePlus, BellRing, ClipboardClock, Download, LayoutDashboard, Logs, Settings2, UserCircle2, Users2 } from "lucide-react";
+import { BadgePlus, ClipboardClock, Download, LayoutDashboard, Logs, Settings2, UserCircle2, Users2 } from "lucide-react";
 import type { UserRole } from "@/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -39,41 +39,19 @@ export function ProfileMenu({ installAvailable = false, onInstall, role }: Profi
 
   return (
     <div ref={ref} className="relative flex items-center gap-2">
-      {installAvailable && onInstall ? (
-        <Button
-          type="button"
-          variant="secondary"
-          size="icon"
-          className="h-11 w-11 shrink-0 rounded-2xl"
-          onClick={() => void onInstall()}
-        >
-          <Download className="h-4 w-4" />
-          <span className="sr-only">Instalar app</span>
-        </Button>
-      ) : null}
-
       <Button
         type="button"
         variant="ghost"
         size="icon"
-        className="h-11 w-11 shrink-0 rounded-2xl border border-border bg-card/70"
-      >
-        <BellRing className="h-4 w-4" />
-        <span className="sr-only">Avisos</span>
-      </Button>
-
-      <Button
-        type="button"
-        variant="ghost"
-        className="h-11 shrink-0 rounded-2xl border border-border bg-card/70 px-3 sm:px-4"
+        className="h-10 w-10 shrink-0 rounded-2xl border border-border bg-card/70"
         onClick={() => setOpen((value) => !value)}
       >
         <UserCircle2 className="h-4 w-4" />
-        <span className="sr-only sm:not-sr-only sm:ml-2">Perfil</span>
+        <span className="sr-only">Perfil</span>
       </Button>
 
       {open && (
-        <div className="absolute right-0 top-[calc(100%+10px)] z-[70] w-[min(92vw,280px)] overflow-hidden rounded-[24px] border border-border bg-white/96 p-2 shadow-[0_24px_54px_rgba(24,39,75,0.16)] backdrop-blur-xl dark:bg-card/96">
+        <div className="absolute right-0 top-[calc(100%+10px)] z-[140] w-[min(92vw,280px)] overflow-hidden rounded-[24px] border border-border bg-white/96 p-2 shadow-[0_24px_54px_rgba(24,39,75,0.16)] backdrop-blur-xl dark:bg-card/96">
           <div className="space-y-1">
             <Link
               href="/profile"
@@ -83,6 +61,20 @@ export function ProfileMenu({ installAvailable = false, onInstall, role }: Profi
               <UserCircle2 className="h-4 w-4 text-primary" />
               Meu perfil
             </Link>
+
+            {installAvailable && onInstall ? (
+              <button
+                type="button"
+                className="flex w-full items-center gap-3 rounded-[18px] px-3 py-3 text-left text-sm font-medium text-foreground transition-colors hover:bg-muted"
+                onClick={() => {
+                  setOpen(false);
+                  void onInstall();
+                }}
+              >
+                <Download className="h-4 w-4 text-primary" />
+                Instalar app
+              </button>
+            ) : null}
 
             {canManage && (
               <>

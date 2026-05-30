@@ -4,6 +4,7 @@ export const employeeNavItems = [
   { href: "/employee", label: "Ponto" },
   { href: "/employee/history", label: "Historico" },
   { href: "/employee/requests", label: "Solicitacoes" },
+  { href: "/profile", label: "Perfil" },
 ];
 
 export const adminNavItems = [

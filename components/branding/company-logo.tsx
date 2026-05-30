@@ -16,7 +16,7 @@ function LogoMark({ compact = false }: { compact?: boolean }) {
       aria-label="FC Comunicação Visual"
       className={cn(
         "h-auto shrink-0",
-        compact ? "w-[112px] sm:w-[128px]" : "w-[136px] sm:w-[168px]",
+        compact ? "w-[88px] sm:w-[96px]" : "w-[136px] sm:w-[168px]",
       )}
       role="img"
     >
