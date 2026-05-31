@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { createPortal } from "react-dom";
 import {
   Camera,
   Check,
@@ -118,10 +119,12 @@ export function PunchPanel({
   const [selfieResetKey, setSelfieResetKey] = useState(0);
   const [receipt, setReceipt] = useState<Receipt | null>(null);
   const [now, setNow] = useState(() => new Date());
+  const [portalReady, setPortalReady] = useState(false);
 
   useEffect(() => {
     setDeviceId(getDeviceId());
     setDeviceLabel(getDeviceLabel());
+    setPortalReady(true);
   }, []);
 
   useEffect(() => {
@@ -380,8 +383,10 @@ export function PunchPanel({
         </Card>
       </section>
 
-      <AnimatePresence>
-        {modalOpen && (
+      {portalReady
+        ? createPortal(
+            <AnimatePresence>
+              {modalOpen && (
           <motion.div
             className="fixed inset-0 z-[220] bg-slate-950/38 backdrop-blur-[3px]"
             initial={{ opacity: 0 }}
@@ -634,8 +639,11 @@ export function PunchPanel({
               </motion.div>
             </div>
           </motion.div>
-        )}
-      </AnimatePresence>
+              )}
+            </AnimatePresence>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

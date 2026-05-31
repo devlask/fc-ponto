@@ -36,6 +36,14 @@ export function AppShell({ children, userRole }: AppShellProps) {
         "/profile": UserCircle2,
       };
 
+  const isActiveNavItem = (href: string) => {
+    if (href === "/employee" || href === "/admin" || href === "/profile") {
+      return pathname === href;
+    }
+
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
   return (
     <div className="mx-auto min-h-screen max-w-6xl px-4 pb-36 pt-4 sm:px-6 lg:px-8">
       <motion.header
@@ -68,7 +76,7 @@ export function AppShell({ children, userRole }: AppShellProps) {
       >
         <div className="glass-panel flex items-center justify-between rounded-[30px] border border-border/90 px-3 py-3 backdrop-blur-xl shadow-[0_18px_50px_rgba(35,31,32,0.08)]">
           {navItems.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const active = isActiveNavItem(item.href);
             const Icon = iconMap[item.href as keyof typeof iconMap];
 
             return (
