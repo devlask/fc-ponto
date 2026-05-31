@@ -262,7 +262,7 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
     user.email ||
     "Usuário";
   const role = (profile?.role as string | undefined) || "employee";
-  const timeZone = (schedule?.timezone as string | undefined) || "America/Sao_Paulo";
+  const timeZone = (schedule?.timezone as string | undefined) || "America/Manaus";
   const dailyRules =
     schedule?.daily_rules && typeof schedule.daily_rules === "object"
       ? (schedule.daily_rules as Record<string, { enabled?: boolean; start?: string; end?: string }>)

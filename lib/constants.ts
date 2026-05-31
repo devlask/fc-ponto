@@ -17,7 +17,7 @@ export const adminNavItems = [
 ];
 
 export const defaultSchedule: WorkScheduleSettings = {
-  timezone: "America/Sao_Paulo",
+  timezone: "America/Manaus",
   toleranceMinutes: 10,
   overtimeGraceMinutes: 0,
   geofence: {

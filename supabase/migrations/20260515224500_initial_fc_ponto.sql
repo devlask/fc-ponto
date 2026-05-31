@@ -33,7 +33,7 @@ create table if not exists public.work_schedule_settings (
   id uuid primary key default gen_random_uuid(),
   name text not null default 'Jornada padrao FC',
   company_name text not null default 'FC Comunicacao Visual',
-  timezone text not null default 'America/Sao_Paulo',
+  timezone text not null default 'America/Manaus',
   is_active boolean not null default true,
   tolerance_minutes integer not null default 10 check (tolerance_minutes >= 0),
   overtime_grace_minutes integer not null default 0 check (overtime_grace_minutes >= 0),
@@ -281,7 +281,7 @@ begin
       end if;
     end if;
   else
-    new.business_date = timezone('America/Sao_Paulo', new.recorded_at)::date;
+    new.business_date = timezone('America/Manaus', new.recorded_at)::date;
   end if;
 
   return new;

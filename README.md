@@ -56,3 +56,4 @@ npm run dev
 - Sem variaveis do Supabase, a interface abre em modo demonstracao para facilitar validacao visual.
 - O middleware protege `/employee` e `/admin` quando o Auth estiver ativo.
 - `time_entries` e `audit_logs` foram modelados como historico imutavel; ajustes devem gerar novos registros compensatorios.
+- O fuso padrao da FC Comunicacao Visual esta configurado para `America/Manaus`.

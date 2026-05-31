@@ -481,7 +481,7 @@ export async function getAdminDashboardData(): Promise<AdminDashboardSnapshot | 
     supabase.from("edit_requests").select("id", { count: "exact", head: true }).eq("status", "pending"),
   ]);
 
-  const timeZone = typeof scheduleResult.data?.timezone === "string" ? scheduleResult.data.timezone : "America/Sao_Paulo";
+  const timeZone = typeof scheduleResult.data?.timezone === "string" ? scheduleResult.data.timezone : "America/Manaus";
   const toleranceMinutes = typeof scheduleResult.data?.tolerance_minutes === "number" ? scheduleResult.data.tolerance_minutes : 10;
   const dailyRules =
     scheduleResult.data?.daily_rules && typeof scheduleResult.data.daily_rules === "object"
@@ -761,7 +761,7 @@ export async function getAdminEmployeeDetail(userId: string, periodDays: number 
           (entry) => new Date(entry.timestamp).getTime() >= Date.now() - periodDays * 24 * 60 * 60 * 1000,
         );
   const summary = calculateWorkedMinutes(filteredEntries);
-  const timeZone = typeof schedule?.timezone === "string" ? schedule.timezone : "America/Sao_Paulo";
+  const timeZone = typeof schedule?.timezone === "string" ? schedule.timezone : "America/Manaus";
   const toleranceMinutes = typeof schedule?.tolerance_minutes === "number" ? schedule.tolerance_minutes : 10;
   const dailyRules =
     schedule?.daily_rules && typeof schedule.daily_rules === "object"
