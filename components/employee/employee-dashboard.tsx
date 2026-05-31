@@ -11,6 +11,7 @@ type EmployeeDashboardProps = {
   greeting: string;
   primaryAction: EmployeePrimaryAction;
   quickSummary: EmployeeQuickSummary;
+  timeZone: string;
   todayEntries: TimeEntry[];
 };
 
@@ -20,6 +21,7 @@ export function EmployeeDashboard({
   greeting,
   primaryAction,
   quickSummary,
+  timeZone,
   todayEntries: initialTodayEntries,
 }: EmployeeDashboardProps) {
   const [todayEntries, setTodayEntries] = useState<TimeEntry[]>(initialTodayEntries);
@@ -39,6 +41,7 @@ export function EmployeeDashboard({
       onRegistered={handleRegistered}
       primaryAction={primaryAction}
       quickSummary={quickSummary}
+      timeZone={timeZone}
       todayEntries={todayEntries}
     />
   );

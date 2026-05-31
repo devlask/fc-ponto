@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { resolveUserRole } from "@/lib/admin-data";
 import { recordAdminAudit } from "@/lib/admin-audit";
+import { resolveAddressLabel } from "@/lib/geocoding";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 export async function POST(
@@ -57,6 +58,9 @@ export async function POST(
     .order("updated_at", { ascending: false })
     .maybeSingle();
 
+  const addressLabel =
+    body.latitude && body.longitude ? await resolveAddressLabel(null, latitude, longitude) : null;
+
   const { data: insertedEntry, error } = await supabase
     .from("time_entries")
     .insert({
@@ -76,6 +80,7 @@ export async function POST(
     source: "admin",
     is_manual: true,
     metadata: {
+      addressLabel,
       reason: body.reason,
         adjustedBy: user.id,
         note: body.note?.trim() || null,

@@ -18,6 +18,15 @@ function mapGeofenceLabel(status: string | null | undefined) {
   return "Dentro do geofence";
 }
 
+function getStoredAddressLabel(metadata: unknown) {
+  if (!metadata || typeof metadata !== "object") {
+    return null;
+  }
+
+  const addressLabel = (metadata as Record<string, unknown>).addressLabel;
+  return typeof addressLabel === "string" && addressLabel.trim() ? addressLabel.trim() : null;
+}
+
 function mapRealtimeEntry(
   record: Record<string, unknown>,
   employeeName: string,
@@ -33,7 +42,9 @@ function mapRealtimeEntry(
       lat: Number(record.latitude),
       lng: Number(record.longitude),
       accuracy: Number(record.accuracy_meters),
-      label: mapGeofenceLabel((record.geofence_status as string | null | undefined) ?? "inside"),
+      label:
+        getStoredAddressLabel(record.metadata) ??
+        mapGeofenceLabel((record.geofence_status as string | null | undefined) ?? "inside"),
     },
     isOvertime: Boolean(record.is_overtime),
     ipAddress: typeof record.ip_address === "string" ? record.ip_address : "Não informado",
@@ -65,7 +76,7 @@ export function LiveHistoryTimeline({
     void supabase
       .from("time_entries")
       .select(
-        "id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime",
+        "id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, metadata",
       )
       .eq("user_id", userId)
       .order("recorded_at", { ascending: false })

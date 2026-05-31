@@ -24,6 +24,7 @@ export default async function EmployeeJourneyPage() {
       firstEntry={snapshot.quickSummary.firstEntry}
       lastExit={snapshot.quickSummary.lastExit}
       overtime={snapshot.quickSummary.overtime}
+      timeZone={snapshot.timeZone}
       total={formatMinutes(snapshot.summary.totalMinutes)}
     />
   );

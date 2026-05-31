@@ -1,6 +1,7 @@
 import "server-only";
 
 import { unstable_noStore as noStore } from "next/cache";
+import { resolveAddressLabel } from "@/lib/geocoding";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSignedStorageUrl } from "@/lib/storage";
 import { calculateWorkedMinutes } from "@/lib/time";
@@ -119,7 +120,7 @@ function getGreeting(timeZone: string) {
   return "Boa noite";
 }
 
-function formatSimpleTime(timestamp: string | null) {
+function formatSimpleTime(timestamp: string | null, timeZone?: string) {
   if (!timestamp) {
     return "—";
   }
@@ -127,6 +128,7 @@ function formatSimpleTime(timestamp: string | null) {
   return new Intl.DateTimeFormat("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone,
   }).format(new Date(timestamp));
 }
 
@@ -136,11 +138,19 @@ function getLocationLabel(status: string | null | undefined) {
   return "Dentro do geofence";
 }
 
-function mapDbEntryToTimeEntry(
+async function mapDbEntryToTimeEntry(
   entry: Record<string, unknown>,
   employeeId: string,
   employeeName: string,
-): TimeEntry {
+): Promise<TimeEntry> {
+  const lat = Number(entry.latitude);
+  const lng = Number(entry.longitude);
+  const accuracy = Number(entry.accuracy_meters);
+  const metadata = entry.metadata && typeof entry.metadata === "object" ? (entry.metadata as Record<string, unknown>) : null;
+  const locationLabel =
+    (await resolveAddressLabel(metadata, lat, lng)) ??
+    getLocationLabel((entry.geofence_status as string | null | undefined) ?? "inside");
+
   return {
     id: String(entry.id),
     employeeId,
@@ -148,10 +158,10 @@ function mapDbEntryToTimeEntry(
     type: String(entry.event_type) as TimeEntry["type"],
     timestamp: String(entry.recorded_at),
     location: {
-      lat: Number(entry.latitude),
-      lng: Number(entry.longitude),
-      accuracy: Number(entry.accuracy_meters),
-      label: getLocationLabel((entry.geofence_status as string | null | undefined) ?? "inside"),
+      lat,
+      lng,
+      accuracy,
+      label: locationLabel,
     },
     isOvertime: Boolean(entry.is_overtime),
     ipAddress: typeof entry.ip_address === "string" ? entry.ip_address : "Não informado",
@@ -197,6 +207,7 @@ export type EmployeeTimeSnapshot = {
     totalMinutes: number;
   };
   summaryCards: Array<{ label: string; value: string }>;
+  timeZone: string;
   todayEntries: TimeEntry[];
   userId: string;
 };
@@ -262,7 +273,7 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
     supabase
       .from("time_entries")
       .select(
-        "id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path",
+        "id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path, metadata",
       )
       .eq("user_id", user.id)
       .eq("business_date", businessDate)
@@ -271,17 +282,23 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
     supabase
       .from("time_entries")
       .select(
-        "id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path",
+        "id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path, metadata",
       )
       .eq("user_id", user.id)
       .order("recorded_at", { ascending: false })
       .limit(240),
   ]);
 
-  const todayEntries = await attachSelfieUrls((todayResult.data ?? []).map((entry) => mapDbEntryToTimeEntry(entry, user.id, employeeName)));
-  const recentEntries = await attachSelfieUrls([...(recentResult.data ?? [])]
-    .reverse()
-    .map((entry) => mapDbEntryToTimeEntry(entry, user.id, employeeName)));
+  const todayEntries = await attachSelfieUrls(
+    await Promise.all((todayResult.data ?? []).map((entry) => mapDbEntryToTimeEntry(entry, user.id, employeeName))),
+  );
+  const recentEntries = await attachSelfieUrls(
+    await Promise.all(
+      [...(recentResult.data ?? [])]
+        .reverse()
+        .map((entry) => mapDbEntryToTimeEntry(entry, user.id, employeeName)),
+    ),
+  );
 
   const summary = calculateWorkedMinutes(todayEntries);
   const currentState = getCurrentWorkState(todayEntries.at(-1) ?? recentEntries.at(-1) ?? null);
@@ -322,8 +339,8 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
     greeting: getGreeting(timeZone),
     primaryAction,
     quickSummary: {
-      firstEntry: formatSimpleTime(firstEntry?.timestamp ?? null),
-      lastExit: formatSimpleTime(lastExit?.timestamp ?? null),
+      firstEntry: formatSimpleTime(firstEntry?.timestamp ?? null, timeZone),
+      lastExit: formatSimpleTime(lastExit?.timestamp ?? null, timeZone),
       overtime: formatMinutes(summary.overtimeMinutes),
       status: workStateLabels[currentState],
     },
@@ -336,6 +353,7 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
       { label: "Horas extras", value: formatMinutes(summary.overtimeMinutes) },
       { label: "Total do dia", value: formatMinutes(summary.totalMinutes) },
     ],
+    timeZone,
     todayEntries,
     userId: user.id,
   };

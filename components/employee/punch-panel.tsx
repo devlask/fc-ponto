@@ -24,7 +24,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { calculateWorkedMinutes } from "@/lib/time";
 import { cn } from "@/lib/utils";
+import { formatMinutes } from "@/lib/utils";
 import type { EmployeePrimaryAction, EmployeeQuickSummary } from "@/lib/employee-time";
 import type { GeoPoint, TimeEntry, WorkState } from "@/types";
 
@@ -35,6 +37,7 @@ type PunchPanelProps = {
   onRegistered?: (entry: TimeEntry) => void;
   primaryAction: EmployeePrimaryAction;
   quickSummary: EmployeeQuickSummary;
+  timeZone: string;
   todayEntries: TimeEntry[];
 };
 
@@ -102,6 +105,7 @@ export function PunchPanel({
   onRegistered,
   primaryAction,
   quickSummary,
+  timeZone,
   todayEntries,
 }: PunchPanelProps) {
   const router = useRouter();
@@ -150,6 +154,32 @@ export function PunchPanel({
   const canConfirm = Boolean(location && selfie);
   const progress = getStepProgress(step);
   const currentStepIndex = getStepIndex(step);
+  const derivedSummary = useMemo(() => {
+    const firstEntry = todayEntries.find((entry) => entry.type === "entry" || entry.isOvertime) ?? null;
+    const lastExit = [...todayEntries].reverse().find((entry) => entry.type === "exit") ?? null;
+    const summary = calculateWorkedMinutes(todayEntries);
+
+    return {
+      firstEntry:
+        firstEntry
+          ? new Intl.DateTimeFormat("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone,
+            }).format(new Date(firstEntry.timestamp))
+          : quickSummary.firstEntry,
+      lastExit:
+        lastExit
+          ? new Intl.DateTimeFormat("pt-BR", {
+              hour: "2-digit",
+              minute: "2-digit",
+              timeZone,
+            }).format(new Date(lastExit.timestamp))
+          : quickSummary.lastExit,
+      overtime: formatMinutes(summary.overtimeMinutes),
+      status: quickSummary.status,
+    };
+  }, [quickSummary.firstEntry, quickSummary.lastExit, quickSummary.status, timeZone, todayEntries]);
 
   const buttonToneClasses =
     primaryAction.tone === "entry"
@@ -169,6 +199,7 @@ export function PunchPanel({
         value: new Intl.DateTimeFormat("pt-BR", {
           dateStyle: "full",
           timeStyle: "medium",
+          timeZone,
         }).format(now),
       },
       {
@@ -180,7 +211,7 @@ export function PunchPanel({
         value: deviceLabel ?? "Carregando",
       },
     ],
-    [deviceLabel, location, nextActionLabel, now],
+    [deviceLabel, location, nextActionLabel, now, timeZone],
   );
 
   const resetFlow = (clearReceipt = true) => {
@@ -267,6 +298,7 @@ export function PunchPanel({
               {new Intl.DateTimeFormat("pt-BR", {
                 hour: "2-digit",
                 minute: "2-digit",
+                timeZone,
               }).format(now)}
             </p>
             <p className="text-base text-muted-foreground">
@@ -274,6 +306,7 @@ export function PunchPanel({
                 weekday: "long",
                 day: "2-digit",
                 month: "long",
+                timeZone,
               }).format(now)}
             </p>
           </div>
@@ -315,9 +348,9 @@ export function PunchPanel({
 
             <div className="space-y-3">
               {[
-                { label: "Entrada", value: quickSummary.firstEntry, tone: "bg-[#ecfbff] text-[#007f99]" },
-                { label: "Saída", value: quickSummary.lastExit, tone: "bg-[#fff2f8] text-[#d32c82]" },
-                { label: "Horas extras", value: quickSummary.overtime, tone: "bg-[#fff8de] text-[#9a7100]" },
+                { label: "Entrada", value: derivedSummary.firstEntry, tone: "bg-[#ecfbff] text-[#007f99]" },
+                { label: "Saída", value: derivedSummary.lastExit, tone: "bg-[#fff2f8] text-[#d32c82]" },
+                { label: "Horas extras", value: derivedSummary.overtime, tone: "bg-[#fff8de] text-[#9a7100]" },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between rounded-[22px] bg-white/78 px-4 py-4">
                   <span className="text-sm font-medium text-muted-foreground">{item.label}</span>
@@ -369,6 +402,7 @@ export function PunchPanel({
                             {new Intl.DateTimeFormat("pt-BR", {
                               hour: "2-digit",
                               minute: "2-digit",
+                              timeZone,
                             }).format(new Date(entry.timestamp))}
                           </p>
                         </div>
@@ -606,6 +640,7 @@ export function PunchPanel({
                                   {new Intl.DateTimeFormat("pt-BR", {
                                     dateStyle: "medium",
                                     timeStyle: "medium",
+                                    timeZone,
                                   }).format(new Date(receipt.timestamp))}
                                 </p>
                                 <p className="inline-flex items-center gap-2 text-sm text-emerald-800">

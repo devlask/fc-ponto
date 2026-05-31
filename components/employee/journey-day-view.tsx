@@ -10,6 +10,7 @@ type JourneyDayViewProps = {
   firstEntry: string | null;
   lastExit: string | null;
   overtime: string;
+  timeZone: string;
   total: string;
 };
 
@@ -18,7 +19,7 @@ function getEntryLabel(entry: TimeEntry) {
   return entry.isOvertime ? "Entrada extra" : "Entrada";
 }
 
-export function JourneyDayView({ currentStateLabel, entries, firstEntry, lastExit, overtime, total }: JourneyDayViewProps) {
+export function JourneyDayView({ currentStateLabel, entries, firstEntry, lastExit, overtime, timeZone, total }: JourneyDayViewProps) {
   return (
     <div className="space-y-5">
       <Card className="border-none bg-white/76 shadow-[0_16px_36px_rgba(35,31,32,0.05)]">
@@ -82,6 +83,7 @@ export function JourneyDayView({ currentStateLabel, entries, firstEntry, lastExi
                       {new Intl.DateTimeFormat("pt-BR", {
                         hour: "2-digit",
                         minute: "2-digit",
+                        timeZone,
                       }).format(new Date(entry.timestamp))}
                     </p>
                   </div>

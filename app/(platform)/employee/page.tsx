@@ -23,6 +23,7 @@ export default async function EmployeePage() {
       greeting={snapshot.greeting}
       primaryAction={snapshot.primaryAction}
       quickSummary={snapshot.quickSummary}
+      timeZone={snapshot.timeZone}
       todayEntries={snapshot.todayEntries}
     />
   );

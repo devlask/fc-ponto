@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { resolveAddressLabel } from "@/lib/geocoding";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { getSignedStorageUrl } from "@/lib/storage";
 import { entryTypeLabels, inferNextEntryType } from "@/lib/employee-time";
@@ -136,6 +137,8 @@ export async function POST(request: NextRequest) {
     geofenceStatus = geofenceDistanceMeters <= Number(schedule.geofence_radius_meters) ? "inside" : "outside";
   }
 
+  const addressLabel = (await resolveAddressLabel(null, latitude, longitude)) ?? getLocationLabel(geofenceStatus);
+
   const { error: uploadError } = await supabase.storage.from("time-selfies").upload(selfiePath, selfieBuffer, {
     cacheControl: "3600",
     contentType: selfie.type || "image/jpeg",
@@ -163,13 +166,14 @@ export async function POST(request: NextRequest) {
       device_label: deviceLabel.slice(0, 120),
       source: "pwa",
       metadata: {
+        addressLabel,
         geofenceDistanceMeters,
         originalFileName: selfie.name,
         selfieSizeBytes: selfie.size,
         userAgent: request.headers.get("user-agent"),
       },
     })
-    .select("id, event_type, recorded_at, is_overtime, geofence_status, selfie_path")
+    .select("id, event_type, recorded_at, is_overtime, geofence_status, selfie_path, metadata")
     .single();
 
   if (insertError) {
@@ -191,7 +195,9 @@ export async function POST(request: NextRequest) {
       isOvertime: insertedEntry.is_overtime,
       location: {
         accuracy,
-        label: getLocationLabel(insertedEntry.geofence_status),
+        label: typeof insertedEntry.metadata === "object" && insertedEntry.metadata
+          ? ((insertedEntry.metadata as Record<string, unknown>).addressLabel as string | undefined) ?? addressLabel
+          : addressLabel,
         lat: latitude,
         lng: longitude,
       },
