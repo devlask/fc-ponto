@@ -32,7 +32,29 @@ export async function POST() {
   const { data, error } = await adminClient.rpc("reset_operational_data");
 
   if (error) {
-    return NextResponse.json({ error: "Falha ao resetar os dados operacionais." }, { status: 500 });
+    console.error("reset_operational_data RPC failed", error);
+
+    const message = typeof error.message === "string" ? error.message : "";
+    const details = typeof error.details === "string" ? error.details : "";
+    const hint = typeof error.hint === "string" ? error.hint : "";
+    const combined = `${message} ${details} ${hint}`.toLowerCase();
+
+    if (combined.includes("reset_operational_data") && (combined.includes("not find") || combined.includes("does not exist"))) {
+      return NextResponse.json(
+        {
+          error:
+            "A função de reset ainda não existe no Supabase deste ambiente. Aplique a migration 20260601093000_add_reset_operational_data_rpc.sql com `npx supabase db push`.",
+        },
+        { status: 500 },
+      );
+    }
+
+    return NextResponse.json(
+      {
+        error: message || "Falha ao resetar os dados operacionais.",
+      },
+      { status: 500 },
+    );
   }
 
   const counts =
