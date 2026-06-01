@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { ShieldCheck } from "lucide-react";
+import { ResetOperationalDataCard } from "@/components/admin/reset-operational-data-card";
 import { ScheduleSettingsPanel } from "@/components/admin/schedule-settings-panel";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -7,6 +8,7 @@ export default function AdminSettingsPage() {
   return (
     <div className="space-y-6">
       <ScheduleSettingsPanel />
+      <ResetOperationalDataCard />
 
       <Card className="border-none bg-white/76 shadow-[0_16px_36px_rgba(35,31,32,0.05)]">
         <CardContent className="flex items-center justify-between gap-4 p-5">
