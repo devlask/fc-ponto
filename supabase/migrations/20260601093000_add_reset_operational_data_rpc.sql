@@ -23,9 +23,6 @@ begin
 
   truncate table public.edit_requests, public.overtime_entries, public.time_entries;
 
-  delete from storage.objects
-  where bucket_id in ('time-selfies', 'edit-support');
-
   return jsonb_build_object(
     'timeEntries', time_entries_count,
     'overtimeEntries', overtime_entries_count,

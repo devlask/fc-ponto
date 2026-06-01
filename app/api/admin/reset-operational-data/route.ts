@@ -4,6 +4,36 @@ import { resolveUserRole } from "@/lib/admin-data";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
+async function removeBucketObjects(
+  adminClient: NonNullable<ReturnType<typeof createSupabaseAdminClient>>,
+  bucketId: string,
+) {
+  const { data: rows, error } = await adminClient.schema("storage").from("objects").select("name").eq("bucket_id", bucketId);
+
+  if (error) {
+    throw new Error(`Não foi possível listar os arquivos do bucket ${bucketId}.`);
+  }
+
+  const paths = (rows ?? [])
+    .map((row) => (typeof row.name === "string" ? row.name : null))
+    .filter((value): value is string => Boolean(value));
+
+  if (paths.length === 0) {
+    return 0;
+  }
+
+  for (let index = 0; index < paths.length; index += 100) {
+    const chunk = paths.slice(index, index + 100);
+    const { error: removeError } = await adminClient.storage.from(bucketId).remove(chunk);
+
+    if (removeError) {
+      throw new Error(`Não foi possível remover arquivos do bucket ${bucketId}.`);
+    }
+  }
+
+  return paths.length;
+}
+
 export async function POST() {
   const supabase = await createSupabaseServerClient();
 
@@ -67,6 +97,25 @@ export async function POST() {
           storageObjects: 0,
           timeEntries: 0,
         };
+
+  try {
+    const [selfiesRemoved, supportRemoved] = await Promise.all([
+      removeBucketObjects(adminClient, "time-selfies"),
+      removeBucketObjects(adminClient, "edit-support"),
+    ]);
+
+    counts.storageObjects = selfiesRemoved + supportRemoved;
+  } catch (storageError) {
+    return NextResponse.json(
+      {
+        error:
+          storageError instanceof Error
+            ? `${storageError.message} O banco já foi resetado, mas a limpeza do Storage não terminou.`
+            : "O banco foi resetado, mas houve falha ao limpar o Storage.",
+      },
+      { status: 500 },
+    );
+  }
 
   await recordAdminAudit({
     action: "admin_resetou_dados_operacionais",

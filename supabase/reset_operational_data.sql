@@ -2,9 +2,6 @@ begin;
 
 truncate table public.edit_requests, public.overtime_entries, public.time_entries;
 
-delete from storage.objects
-where bucket_id in ('time-selfies', 'edit-support');
-
 commit;
 
 -- Preserva:
@@ -12,3 +9,4 @@ commit;
 -- public.work_schedule_settings
 -- public.audit_logs
 -- storage de avatar de perfil
+-- Arquivos de selfie/suporte devem ser limpos pela Storage API
