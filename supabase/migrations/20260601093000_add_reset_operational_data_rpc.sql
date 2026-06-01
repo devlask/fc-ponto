@@ -23,9 +23,6 @@ begin
 
   truncate table public.edit_requests, public.overtime_entries, public.time_entries;
 
-  delete from public.audit_logs
-  where target_table in ('time_entries', 'overtime_entries', 'edit_requests');
-
   delete from storage.objects
   where bucket_id in ('time-selfies', 'edit-support');
 
