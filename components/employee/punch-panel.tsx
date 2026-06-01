@@ -213,6 +213,12 @@ export function PunchPanel({
     ],
     [deviceLabel, location, nextActionLabel, now, timeZone],
   );
+  const modalHeaderStyle = {
+    paddingTop: "calc(env(safe-area-inset-top, 0px) + 14px)",
+  } as const;
+  const modalFooterStyle = {
+    paddingBottom: "calc(env(safe-area-inset-bottom, 0px) + 14px)",
+  } as const;
 
   const resetFlow = (clearReceipt = true) => {
     setLocation(null);
@@ -422,43 +428,49 @@ export function PunchPanel({
             <AnimatePresence>
               {modalOpen && (
           <motion.div
-            className="fixed inset-0 z-[220] bg-slate-950/38 backdrop-blur-[3px]"
+            className="fixed inset-0 z-[220] overscroll-none bg-slate-950/38 backdrop-blur-[3px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
           >
-            <div className="flex min-h-screen items-end justify-center sm:items-center sm:p-6">
+            <div className="flex min-h-[100svh] items-stretch justify-center sm:min-h-screen sm:items-center sm:p-6">
               <motion.div
                 initial={{ opacity: 0, y: 24, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: 20, scale: 0.98 }}
                 transition={{ duration: 0.22 }}
                 className={cn(
-                  "relative h-[100dvh] w-full overflow-hidden border bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,255,0.98))] shadow-[0_28px_90px_rgba(10,26,61,0.24)] sm:h-auto sm:max-h-[92vh] sm:max-w-2xl sm:rounded-[32px]",
+                  "relative flex h-[100svh] w-full flex-col overflow-hidden bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(247,250,255,0.98))] shadow-[0_28px_90px_rgba(10,26,61,0.24)] sm:h-auto sm:max-h-[92vh] sm:max-w-2xl sm:rounded-[32px] sm:border",
                   modalStatus === "idle" && "border-white/70",
                   modalStatus === "success" && "border-emerald-400/60 shadow-[0_28px_90px_rgba(16,185,129,0.22)]",
                   modalStatus === "error" && "border-rose-400/60 shadow-[0_28px_90px_rgba(244,63,94,0.20)]",
                 )}
               >
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  className="absolute right-4 top-[calc(env(safe-area-inset-top,0px)+12px)] z-20 rounded-full bg-white/92 shadow-[0_14px_34px_rgba(10,26,61,0.12)]"
-                  onClick={closeModal}
+                <div
+                  className="shrink-0 border-b border-border/70 bg-white/92 px-5 pb-4 backdrop-blur-xl sm:px-7 sm:pt-8"
+                  style={modalHeaderStyle}
                 >
-                  <X className="h-4 w-4" />
-                  <span className="sr-only">Fechar modal</span>
-                </Button>
-
-                <div className="h-[100dvh] overflow-y-auto sm:max-h-[92vh]">
-                  <div className="px-5 pb-2 pt-[calc(env(safe-area-inset-top,0px)+20px)] sm:px-7 sm:pt-8">
-                    <p className="text-sm font-medium text-muted-foreground">FC Comunicação Visual</p>
-                    <p className="font-heading text-xl font-semibold text-foreground">Registrar ponto</p>
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">FC Comunicação Visual</p>
+                      <p className="font-heading text-xl font-semibold text-foreground">Registrar ponto</p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="rounded-full bg-white/92 shadow-[0_14px_34px_rgba(10,26,61,0.12)]"
+                      onClick={closeModal}
+                    >
+                      <X className="h-4 w-4" />
+                      <span className="sr-only">Fechar modal</span>
+                    </Button>
                   </div>
+                </div>
 
+                <div className="min-h-0 flex-1 overflow-y-auto">
                   {modalStatus === "idle" ? (
-                    <div className="space-y-6 px-5 pb-8 pt-2 sm:px-7 sm:pb-7">
+                    <div className="space-y-6 px-5 py-5 sm:px-7 sm:py-6">
                       <div className="flex items-center justify-between gap-3">
                         <Button
                           type="button"
@@ -512,18 +524,6 @@ export function PunchPanel({
                           </div>
 
                           <GpsCaptureCard onResolved={setLocation} resetKey={locationResetKey} />
-
-                          <div className="flex justify-end">
-                            <Button
-                              type="button"
-                              size="lg"
-                              className="h-14 rounded-[20px] px-8"
-                              onClick={() => setStep("selfie")}
-                              disabled={!canGoToSelfie}
-                            >
-                              Continuar
-                            </Button>
-                          </div>
                         </div>
                       )}
 
@@ -537,18 +537,6 @@ export function PunchPanel({
                           </div>
 
                           <SelfieCaptureCard onCaptured={setSelfie} resetKey={selfieResetKey} />
-
-                          <div className="flex justify-end">
-                            <Button
-                              type="button"
-                              size="lg"
-                              className="h-14 rounded-[20px] px-8"
-                              onClick={() => setStep("confirm")}
-                              disabled={!selfie}
-                            >
-                              Revisar marcação
-                            </Button>
-                          </div>
                         </div>
                       )}
 
@@ -575,25 +563,6 @@ export function PunchPanel({
                               <ShieldCheck className="h-4 w-4" />
                               GPS, selfie, IP e dispositivo serão anexados ao evento.
                             </div>
-                          </div>
-
-                          <div className="flex justify-end">
-                            <Button
-                              type="button"
-                              size="lg"
-                              className="h-14 rounded-[20px] px-8"
-                              onClick={submitPunch}
-                              disabled={!canConfirm || submitting}
-                            >
-                              {submitting ? (
-                                <>
-                                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                                  Confirmando...
-                                </>
-                              ) : (
-                                "Confirmar ponto"
-                              )}
-                            </Button>
                           </div>
                         </div>
                       )}
@@ -658,16 +627,65 @@ export function PunchPanel({
                         </div>
                       </div>
 
-                      <div className="flex justify-end gap-3">
-                        {modalStatus === "error" && (
-                          <Button type="button" variant="outline" className="rounded-[20px]" onClick={() => setModalStatus("idle")}>
-                            Tentar novamente
-                          </Button>
-                        )}
-                        <Button type="button" className="rounded-[20px]" onClick={closeModal}>
-                          {modalStatus === "success" ? "Concluir" : "Fechar"}
+                    </div>
+                  )}
+                </div>
+
+                <div
+                  className="shrink-0 border-t border-border/70 bg-white/92 px-5 pt-4 backdrop-blur-xl sm:px-7"
+                  style={modalFooterStyle}
+                >
+                  {modalStatus === "idle" ? (
+                    <div className="flex gap-3">
+                      {step === "location" ? (
+                        <Button
+                          type="button"
+                          size="lg"
+                          className="h-14 w-full rounded-[20px]"
+                          onClick={() => setStep("selfie")}
+                          disabled={!canGoToSelfie}
+                        >
+                          Continuar
                         </Button>
-                      </div>
+                      ) : step === "selfie" ? (
+                        <Button
+                          type="button"
+                          size="lg"
+                          className="h-14 w-full rounded-[20px]"
+                          onClick={() => setStep("confirm")}
+                          disabled={!selfie}
+                        >
+                          Revisar marcação
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          size="lg"
+                          className="h-14 w-full rounded-[20px]"
+                          onClick={submitPunch}
+                          disabled={!canConfirm || submitting}
+                        >
+                          {submitting ? (
+                            <>
+                              <LoaderCircle className="h-4 w-4 animate-spin" />
+                              Confirmando...
+                            </>
+                          ) : (
+                            "Confirmar ponto"
+                          )}
+                        </Button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex justify-end gap-3">
+                      {modalStatus === "error" && (
+                        <Button type="button" variant="outline" className="rounded-[20px]" onClick={() => setModalStatus("idle")}>
+                          Tentar novamente
+                        </Button>
+                      )}
+                      <Button type="button" className="rounded-[20px]" onClick={closeModal}>
+                        {modalStatus === "success" ? "Concluir" : "Fechar"}
+                      </Button>
                     </div>
                   )}
                 </div>
