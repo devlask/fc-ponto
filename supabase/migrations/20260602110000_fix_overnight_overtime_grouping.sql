@@ -1,11 +1,3 @@
-alter table public.work_schedule_settings
-  alter column timezone set default 'America/Manaus';
-
-update public.work_schedule_settings
-set timezone = 'America/Manaus'
-where timezone is null
-   or timezone = 'America/Sao_Paulo';
-
 create or replace function public.hydrate_time_entry_defaults()
 returns trigger
 language plpgsql

@@ -23,6 +23,10 @@ function dayKey(date: Date) {
   return new Intl.DateTimeFormat("en-CA").format(date);
 }
 
+function entryDayKey(entry: TimeEntry) {
+  return entry.businessDate || dayKey(new Date(entry.timestamp));
+}
+
 function isSameFilterRange(date: Date, filter: FilterKey) {
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -49,7 +53,10 @@ export function HistoryGroupedView({ entries }: HistoryGroupedViewProps) {
   const [filter, setFilter] = useState<FilterKey>("month");
 
   const filteredEntries = useMemo(
-    () => entries.filter((entry) => isSameFilterRange(new Date(entry.timestamp), filter)),
+    () =>
+      entries.filter((entry) =>
+        isSameFilterRange(new Date(`${entryDayKey(entry)}T12:00:00`), filter),
+      ),
     [entries, filter],
   );
 
@@ -57,7 +64,7 @@ export function HistoryGroupedView({ entries }: HistoryGroupedViewProps) {
     const groups = new Map<string, TimeEntry[]>();
 
     for (const entry of filteredEntries) {
-      const key = dayKey(new Date(entry.timestamp));
+      const key = entryDayKey(entry);
       const current = groups.get(key) ?? [];
       current.push(entry);
       groups.set(key, current);
@@ -72,7 +79,7 @@ export function HistoryGroupedView({ entries }: HistoryGroupedViewProps) {
   }, [filteredEntries]);
 
   const summary = calculateWorkedMinutes(filteredEntries);
-  const daysWorked = new Set(filteredEntries.map((entry) => dayKey(new Date(entry.timestamp)))).size;
+  const daysWorked = new Set(filteredEntries.map((entry) => entryDayKey(entry))).size;
 
   return (
     <div className="space-y-5">

@@ -173,7 +173,7 @@ export async function POST(request: NextRequest) {
         userAgent: request.headers.get("user-agent"),
       },
     })
-    .select("id, event_type, recorded_at, is_overtime, geofence_status, selfie_path, metadata")
+    .select("id, event_type, recorded_at, business_date, pairing_group, is_overtime, geofence_status, selfie_path, metadata")
     .single();
 
   if (insertError) {
@@ -193,6 +193,7 @@ export async function POST(request: NextRequest) {
       id: insertedEntry.id,
       ipAddress: ipAddress || "Não informado",
       isOvertime: insertedEntry.is_overtime,
+      businessDate: typeof insertedEntry.business_date === "string" ? insertedEntry.business_date : null,
       location: {
         accuracy,
         label: typeof insertedEntry.metadata === "object" && insertedEntry.metadata
@@ -201,6 +202,7 @@ export async function POST(request: NextRequest) {
         lat: latitude,
         lng: longitude,
       },
+      pairingGroup: typeof insertedEntry.pairing_group === "string" ? insertedEntry.pairing_group : null,
       selfiePath,
       selfieUrl,
       timestamp: insertedEntry.recorded_at,

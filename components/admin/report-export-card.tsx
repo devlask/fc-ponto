@@ -28,6 +28,10 @@ function dayKey(timestamp: string) {
   return new Intl.DateTimeFormat("en-CA").format(new Date(timestamp));
 }
 
+function entryDayKey(entry: AdminTimeEntryRow) {
+  return entry.businessDate || dayKey(entry.timestamp);
+}
+
 export function ReportExportCard({ entries }: ReportExportCardProps) {
   const rows = entries.map((entry) => ({
     Funcionário: entry.employeeName,
@@ -58,7 +62,7 @@ export function ReportExportCard({ entries }: ReportExportCardProps) {
       .map((employee) => ({
         ...employee,
         days: [...employee.entries.reduce((map, entry) => {
-          const key = dayKey(entry.timestamp);
+          const key = entryDayKey(entry);
           const current = map.get(key) ?? [];
           current.push(entry);
           map.set(key, current);

@@ -50,14 +50,20 @@ export function calculateWorkedMinutes(entries: TimeEntry[]) {
       const start = dateMinutes(openSegment);
       const end = dateMinutes(entryDate);
       const shiftEnd = timeToMinutes(rule.end);
+      const durationMinutes = Math.max(Math.round((entryDate.getTime() - openSegment.getTime()) / 60000), 0);
+      const sameCalendarDay =
+        openSegment.getFullYear() === entryDate.getFullYear() &&
+        openSegment.getMonth() === entryDate.getMonth() &&
+        openSegment.getDate() === entryDate.getDate();
 
       if (!rule.enabled || start >= shiftEnd) {
-        overtimeMinutes += Math.max(end - start, 0);
-      } else if (end <= shiftEnd) {
-        normalMinutes += Math.max(end - start, 0);
+        overtimeMinutes += durationMinutes;
+      } else if (sameCalendarDay && end <= shiftEnd) {
+        normalMinutes += durationMinutes;
       } else {
-        normalMinutes += Math.max(shiftEnd - start, 0);
-        overtimeMinutes += Math.max(end - shiftEnd, 0);
+        const normalPart = Math.max(shiftEnd - start, 0);
+        normalMinutes += Math.min(normalPart, durationMinutes);
+        overtimeMinutes += Math.max(durationMinutes - Math.min(normalPart, durationMinutes), 0);
       }
 
       openSegment = null;

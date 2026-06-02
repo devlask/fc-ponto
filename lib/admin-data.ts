@@ -287,6 +287,8 @@ async function mapTimeEntry(row: SupabaseRow, userName: string, userRole: UserRo
     employeeName: userName,
     type: String(row.event_type) as EntryType,
     timestamp: String(row.recorded_at),
+    businessDate: typeof row.business_date === "string" ? row.business_date : null,
+    pairingGroup: typeof row.pairing_group === "string" ? row.pairing_group : null,
     location: {
       lat,
       lng,
@@ -370,7 +372,7 @@ export async function getAdminSnapshot() {
     supabase.from("vw_active_workers").select("*"),
     supabase
       .from("time_entries")
-      .select("id, user_id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path, metadata")
+      .select("id, user_id, event_type, recorded_at, business_date, pairing_group, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path, metadata")
       .order("recorded_at", { ascending: false })
       .limit(120),
     supabase
@@ -736,7 +738,7 @@ export async function getAdminEmployeeDetail(userId: string, periodDays: number 
     supabase
       .from("time_entries")
       .select(
-        "id, user_id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path, metadata",
+        "id, user_id, event_type, recorded_at, business_date, pairing_group, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path, metadata",
       )
       .eq("user_id", userId)
       .order("recorded_at", { ascending: false })
@@ -798,7 +800,7 @@ export async function getAdminRecordsData() {
     supabase
       .from("time_entries")
       .select(
-        "id, user_id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path, metadata",
+        "id, user_id, event_type, recorded_at, business_date, pairing_group, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path, metadata",
       )
       .order("recorded_at", { ascending: false })
       .limit(400),

@@ -38,6 +38,8 @@ function mapRealtimeEntry(
     employeeName,
     type: String(record.event_type) as TimeEntry["type"],
     timestamp: String(record.recorded_at),
+    businessDate: typeof record.business_date === "string" ? record.business_date : null,
+    pairingGroup: typeof record.pairing_group === "string" ? record.pairing_group : null,
     location: {
       lat: Number(record.latitude),
       lng: Number(record.longitude),
@@ -76,7 +78,7 @@ export function LiveHistoryTimeline({
     void supabase
       .from("time_entries")
       .select(
-        "id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, metadata",
+        "id, event_type, recorded_at, business_date, pairing_group, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, metadata",
       )
       .eq("user_id", userId)
       .order("recorded_at", { ascending: false })

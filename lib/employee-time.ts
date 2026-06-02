@@ -157,6 +157,8 @@ async function mapDbEntryToTimeEntry(
     employeeName,
     type: String(entry.event_type) as TimeEntry["type"],
     timestamp: String(entry.recorded_at),
+    businessDate: typeof entry.business_date === "string" ? entry.business_date : null,
+    pairingGroup: typeof entry.pairing_group === "string" ? entry.pairing_group : null,
     location: {
       lat,
       lng,
@@ -273,7 +275,7 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
     supabase
       .from("time_entries")
       .select(
-        "id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path, metadata",
+        "id, event_type, recorded_at, business_date, pairing_group, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path, metadata",
       )
       .eq("user_id", user.id)
       .eq("business_date", businessDate)
@@ -282,7 +284,7 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
     supabase
       .from("time_entries")
       .select(
-        "id, event_type, recorded_at, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path, metadata",
+        "id, event_type, recorded_at, business_date, pairing_group, latitude, longitude, accuracy_meters, geofence_status, ip_address, device_label, is_overtime, selfie_path, metadata",
       )
       .eq("user_id", user.id)
       .order("recorded_at", { ascending: false })

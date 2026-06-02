@@ -16,6 +16,8 @@ export type TimeEntry = {
   employeeName: string;
   type: EntryType;
   timestamp: string;
+  businessDate?: string | null;
+  pairingGroup?: string | null;
   location: GeoPoint;
   isOvertime: boolean;
   ipAddress: string;
