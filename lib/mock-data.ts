@@ -1,3 +1,4 @@
+import { defaultSchedule } from "@/lib/constants";
 import { calculateWorkedMinutes } from "@/lib/time";
 import type { ActiveWorker, EditRequest, TimeEntry, UserRole } from "@/types";
 import { formatMinutes } from "@/lib/utils";
@@ -71,7 +72,7 @@ export const employeeEntries: TimeEntry[] = [
   },
 ];
 
-export const timeSummary = calculateWorkedMinutes(employeeEntries);
+export const timeSummary = calculateWorkedMinutes(employeeEntries, { timeZone: defaultSchedule.timezone });
 
 export const dashboardCards = [
   {

@@ -762,8 +762,8 @@ export async function getAdminEmployeeDetail(userId: string, periodDays: number 
       : entries.filter(
           (entry) => new Date(entry.timestamp).getTime() >= Date.now() - periodDays * 24 * 60 * 60 * 1000,
         );
-  const summary = calculateWorkedMinutes(filteredEntries);
   const timeZone = typeof schedule?.timezone === "string" ? schedule.timezone : "America/Manaus";
+  const summary = calculateWorkedMinutes(filteredEntries, { timeZone });
   const toleranceMinutes = typeof schedule?.tolerance_minutes === "number" ? schedule.tolerance_minutes : 10;
   const dailyRules =
     schedule?.daily_rules && typeof schedule.daily_rules === "object"

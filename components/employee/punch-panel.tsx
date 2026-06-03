@@ -157,7 +157,7 @@ export function PunchPanel({
   const derivedSummary = useMemo(() => {
     const firstEntry = todayEntries.find((entry) => entry.type === "entry" || entry.isOvertime) ?? null;
     const lastExit = [...todayEntries].reverse().find((entry) => entry.type === "exit") ?? null;
-    const summary = calculateWorkedMinutes(todayEntries);
+    const summary = calculateWorkedMinutes(todayEntries, { timeZone });
 
     return {
       firstEntry:

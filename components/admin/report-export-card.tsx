@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { AdminTimeEntryRow } from "@/lib/admin-data";
+import { defaultSchedule } from "@/lib/constants";
 import { calculateWorkedMinutes } from "@/lib/time";
 import { formatMinutes } from "@/lib/utils";
 
@@ -109,7 +110,7 @@ export function ReportExportCard({ entries }: ReportExportCardProps) {
       pdf.text(employee.name, 14, y);
       y += 6;
 
-      const employeeSummary = calculateWorkedMinutes(employee.entries);
+      const employeeSummary = calculateWorkedMinutes(employee.entries, { timeZone: defaultSchedule.timezone });
       pdf.setFontSize(10);
       pdf.text(
         `Total trabalhado: ${formatMinutes(employeeSummary.totalMinutes)} • Extras: ${formatMinutes(employeeSummary.overtimeMinutes)} • Registros: ${employee.entries.length}`,
@@ -149,7 +150,7 @@ export function ReportExportCard({ entries }: ReportExportCardProps) {
             y += 5;
           });
 
-          const daySummary = calculateWorkedMinutes(dayEntries);
+          const daySummary = calculateWorkedMinutes(dayEntries, { timeZone: defaultSchedule.timezone });
           ensureSpace(6);
           pdf.text(
             `Total do dia: ${formatMinutes(daySummary.totalMinutes)} • Extras: ${formatMinutes(daySummary.overtimeMinutes)}`,

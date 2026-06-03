@@ -306,7 +306,7 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
     ),
   );
 
-  const summary = calculateWorkedMinutes(todayEntries);
+  const summary = calculateWorkedMinutes(todayEntries, { timeZone });
   const currentState = getCurrentWorkState(todayEntries.at(-1) ?? recentEntries.at(-1) ?? null);
   const nextEntryType = inferNextEntryType((todayEntries.at(-1) ?? recentEntries.at(-1) ?? null)?.type ?? null);
   const afterHours = isAfterConfiguredHours(new Date(), timeZone, dailyRules);

@@ -6,28 +6,75 @@ function timeToMinutes(time: string) {
   return hours * 60 + minutes;
 }
 
-function dateMinutes(date: Date) {
-  return date.getHours() * 60 + date.getMinutes();
+function getLocalTimeParts(date: Date, timeZone: string) {
+  const formatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    weekday: "short",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+
+  const parts = formatter.formatToParts(date);
+  const readPart = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
+  const weekday = readPart("weekday");
+  const year = Number(readPart("year") || "0");
+  const month = Number(readPart("month") || "0");
+  const day = Number(readPart("day") || "0");
+  const hour = Number(readPart("hour") || "0");
+  const minute = Number(readPart("minute") || "0");
+
+  return { day, hour, minute, month, weekday, year };
 }
 
-function getDayRule(date: Date): ScheduleRule {
-  return defaultSchedule.weekdays[date.getDay()] ?? defaultSchedule.weekdays[1];
+function dateMinutes(date: Date, timeZone: string) {
+  const { hour, minute } = getLocalTimeParts(date, timeZone);
+  return hour * 60 + minute;
 }
 
-export function isOvertime(date: Date) {
-  const rule = getDayRule(date);
+function getDayIndex(date: Date, timeZone: string) {
+  const weekday = getLocalTimeParts(date, timeZone).weekday;
+  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  return weekdays.indexOf(weekday);
+}
+
+function getDayRule(date: Date, timeZone: string): ScheduleRule {
+  const dayIndex = getDayIndex(date, timeZone);
+  return defaultSchedule.weekdays[dayIndex] ?? defaultSchedule.weekdays[1];
+}
+
+function isSameCalendarDay(start: Date, end: Date, timeZone: string) {
+  const startParts = getLocalTimeParts(start, timeZone);
+  const endParts = getLocalTimeParts(end, timeZone);
+
+  return (
+    startParts.year === endParts.year &&
+    startParts.month === endParts.month &&
+    startParts.day === endParts.day
+  );
+}
+
+export function isOvertime(date: Date, timeZone = defaultSchedule.timezone) {
+  const rule = getDayRule(date, timeZone);
   if (!rule.enabled) {
     return true;
   }
 
-  return dateMinutes(date) > timeToMinutes(rule.end);
+  return dateMinutes(date, timeZone) > timeToMinutes(rule.end);
 }
 
-export function classifyEntryTimestamp(timestamp: string) {
-  return isOvertime(new Date(timestamp));
+export function classifyEntryTimestamp(timestamp: string, timeZone = defaultSchedule.timezone) {
+  return isOvertime(new Date(timestamp), timeZone);
 }
 
-export function calculateWorkedMinutes(entries: TimeEntry[]) {
+export function calculateWorkedMinutes(
+  entries: TimeEntry[],
+  options?: { timeZone?: string },
+) {
+  const timeZone = options?.timeZone ?? defaultSchedule.timezone;
   const ordered = [...entries].sort(
     (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
   );
@@ -46,15 +93,12 @@ export function calculateWorkedMinutes(entries: TimeEntry[]) {
     }
 
     if (closeTypes && openSegment) {
-      const rule = getDayRule(openSegment);
-      const start = dateMinutes(openSegment);
-      const end = dateMinutes(entryDate);
+      const rule = getDayRule(openSegment, timeZone);
+      const start = dateMinutes(openSegment, timeZone);
+      const end = dateMinutes(entryDate, timeZone);
       const shiftEnd = timeToMinutes(rule.end);
       const durationMinutes = Math.max(Math.round((entryDate.getTime() - openSegment.getTime()) / 60000), 0);
-      const sameCalendarDay =
-        openSegment.getFullYear() === entryDate.getFullYear() &&
-        openSegment.getMonth() === entryDate.getMonth() &&
-        openSegment.getDate() === entryDate.getDate();
+      const sameCalendarDay = isSameCalendarDay(openSegment, entryDate, timeZone);
 
       if (!rule.enabled || start >= shiftEnd) {
         overtimeMinutes += durationMinutes;

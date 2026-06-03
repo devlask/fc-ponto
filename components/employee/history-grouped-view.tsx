@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { defaultSchedule } from "@/lib/constants";
 import { formatMinutes } from "@/lib/utils";
 import { calculateWorkedMinutes } from "@/lib/time";
 import type { TimeEntry } from "@/types";
@@ -78,7 +79,7 @@ export function HistoryGroupedView({ entries }: HistoryGroupedViewProps) {
       }));
   }, [filteredEntries]);
 
-  const summary = calculateWorkedMinutes(filteredEntries);
+  const summary = calculateWorkedMinutes(filteredEntries, { timeZone: defaultSchedule.timezone });
   const daysWorked = new Set(filteredEntries.map((entry) => entryDayKey(entry))).size;
 
   return (
@@ -136,7 +137,7 @@ export function HistoryGroupedView({ entries }: HistoryGroupedViewProps) {
           </Card>
         ) : (
           groupedEntries.map((group) => {
-            const groupSummary = calculateWorkedMinutes(group.items);
+            const groupSummary = calculateWorkedMinutes(group.items, { timeZone: defaultSchedule.timezone });
             return (
               <Card key={group.key} className="border-none bg-white/76 shadow-[0_16px_36px_rgba(35,31,32,0.05)]">
                 <CardContent className="space-y-4 p-5">
