@@ -114,11 +114,11 @@ export function HistoryGroupedView({ entries }: HistoryGroupedViewProps) {
 
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="rounded-[24px] bg-[#f3fbff] p-4">
-              <p className="text-sm text-muted-foreground">Dias trabalhados</p>
+              <p className="text-sm text-muted-foreground">Dias no período</p>
               <p className="mt-2 font-heading text-3xl font-semibold text-foreground">{daysWorked}</p>
             </div>
             <div className="rounded-[24px] bg-[#fff7de] p-4">
-              <p className="text-sm text-muted-foreground">Horas extras</p>
+              <p className="text-sm text-muted-foreground">Horas extras do período</p>
               <p className="mt-2 font-heading text-3xl font-semibold text-foreground">{formatMinutes(summary.overtimeMinutes)}</p>
             </div>
             <div className="rounded-[24px] bg-[#eef7ff] p-4">

@@ -22,9 +22,11 @@ export default async function EmployeePage() {
       employeeName={snapshot.employeeName}
       greeting={snapshot.greeting}
       primaryAction={snapshot.primaryAction}
+      businessDate={snapshot.businessDate}
       quickSummary={snapshot.quickSummary}
       timeZone={snapshot.timeZone}
       todayEntries={snapshot.todayEntries}
+      userId={snapshot.userId}
     />
   );
 }

@@ -779,10 +779,10 @@ export async function getAdminEmployeeDetail(userId: string, periodDays: number 
     periodDays,
     role: String(userProfile.role) as UserRole,
     summaryCards: [
-      { label: "Horas trabalhadas", value: formatMinutes(summary.totalMinutes) },
-      { label: "Horas extras", value: formatMinutes(summary.overtimeMinutes) },
-      { label: "Atrasos", value: `${lateMetrics.lateDays} dia(s) • ${lateMetrics.lateMinutes} min` },
-      { label: "Registros", value: String(filteredEntries.length) },
+      { label: "Horas trabalhadas no período", value: formatMinutes(summary.totalMinutes) },
+      { label: "Horas extras no período", value: formatMinutes(summary.overtimeMinutes) },
+      { label: "Atrasos no período", value: `${lateMetrics.lateDays} dia(s) • ${lateMetrics.lateMinutes} min` },
+      { label: "Registros no período", value: String(filteredEntries.length) },
     ],
   };
 }
