@@ -2,6 +2,7 @@ import "server-only";
 
 import { unstable_noStore as noStore } from "next/cache";
 import { resolveAddressLabel } from "@/lib/geocoding";
+import { defaultSchedule } from "@/lib/constants";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getSignedStorageUrl } from "@/lib/storage";
 import { calculateWorkedMinutes } from "@/lib/time";
@@ -97,7 +98,7 @@ function isAfterConfiguredHours(
   dailyRules: Record<string, { enabled?: boolean; start?: string; end?: string }> | undefined,
 ) {
   const dayIndex = getWeekDayIndex(now, timeZone);
-  const rule = dailyRules?.[String(dayIndex)];
+  const rule = dailyRules?.[String(dayIndex)] ?? defaultSchedule.weekdays[dayIndex];
 
   if (!rule?.enabled || !rule.end) {
     return true;
@@ -267,8 +268,11 @@ export async function getEmployeeTimeSnapshot(supabase: SupabaseClient): Promise
   const timeZone = (schedule?.timezone as string | undefined) || "America/Manaus";
   const dailyRules =
     schedule?.daily_rules && typeof schedule.daily_rules === "object"
-      ? (schedule.daily_rules as Record<string, { enabled?: boolean; start?: string; end?: string }>)
-      : undefined;
+      ? ({
+          ...defaultSchedule.weekdays,
+          ...(schedule.daily_rules as Record<string, { enabled?: boolean; start?: string; end?: string }>),
+        } as Record<string, { enabled?: boolean; start?: string; end?: string }>)
+      : (defaultSchedule.weekdays as Record<string, { enabled?: boolean; start?: string; end?: string }>);
   const businessDate = getBusinessDateInTimeZone(timeZone);
 
   const [todayResult, recentResult] = await Promise.all([
