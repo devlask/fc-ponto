@@ -36,8 +36,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Somente admin pode convidar outro admin." }, { status: 403 });
   }
 
-  const origin = request.headers.get("origin") || process.env.NEXT_PUBLIC_SUPABASE_URL || undefined;
-  const redirectTo = origin ? `${origin}/auth/login` : undefined;
+  const origin = request.headers.get("origin") || process.env.NEXT_PUBLIC_SITE_URL || undefined;
+  const redirectTo = origin ? `${origin}/auth/create-password?mode=invite` : undefined;
 
   const { data, error } = await adminClient.auth.admin.inviteUserByEmail(body.email, {
     data: {

@@ -57,3 +57,13 @@ npm run dev
 - O middleware protege `/employee` e `/admin` quando o Auth estiver ativo.
 - `time_entries` e `audit_logs` foram modelados como historico imutavel; ajustes devem gerar novos registros compensatorios.
 - O fuso padrao da FC Comunicacao Visual esta configurado para `America/Manaus`.
+
+## Convite por email
+
+- Convites de funcionario agora redirecionam para `/auth/create-password?mode=invite`.
+- Para personalizar o email de convite no Supabase, use o HTML em `supabase/email-templates/invite-user.html`.
+- No painel do Supabase:
+  - `Authentication > URL Configuration`
+  - adicione a URL final do app em `Site URL`
+  - adicione `https://seu-dominio/auth/create-password` em `Redirect URLs`
+  - em `Authentication > Email Templates > Invite user`, cole o template HTML.
